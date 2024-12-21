@@ -1,0 +1,36 @@
+.nav-menu{
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding:16px;
+    box-shadow:0 1px 3px -2px black;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.nav-login-btn{
+    display: flex;
+    justify-content:center;
+    align-items: center;
+    background-color: purple;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
+.nav-login-btn{
+    display: flex;
+    justify-content:center;
+    justify-self:auto;
+    background-color: purple;
+    color: white;
+    border-radius: 4px;
+}
+.nav-signup-btn{
+    display: flex;
+    justify-content:center;
+    justify-self:auto;
+    background-color: purple;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+}
