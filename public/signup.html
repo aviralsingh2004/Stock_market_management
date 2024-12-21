@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="./output.css" rel="stylesheet">
+    <title>Sign up Form</title>
+</head>
+<body class="bg-gray-900 bg-gradient-radial from-gray-700 via-gray-800 to-gray-900 flex justify-center items-center min-h-screen">
+
+      <div class="bg-gray-600 rounded-lg p-8 shadow-2xl max-w-md w-full">
+        <h2 class="text-center font-bold text-3xl text-white">Register</h2>
+        <form action="/signUpPost" method="post" class="signupform">
+            <div class="text-pretty mb-4">
+                <label for="firstName" class="block text-sm font-medium text-gray-300">First Name</label>
+                <input class="w-full px-3 py-2 bg-gray-500 border-gray-900 rounded-md text-white focus:ring-2" type="text" name="firstName" id="firstName" placeholder="First Name">
+            </div>
+            
+            <div class="text-pretty mb-4">
+                <label for="lastName" class="block text-sm font-medium text-gray-300">Last Name</label>
+                <input class="w-full px-3 py-2 bg-gray-500 border-gray-900 rounded-md text-white focus:ring-2" type="text" name="lastName" id="lastName" placeholder="Last Name">
+            </div>
+
+            <div class="text-pretty mb-4">
+                <label for="email" class="block text-sm font-medium text-gray-300">Email</label>
+                <input class="w-full px-3 py-2 bg-gray-500 border-gray-900 rounded-md text-white focus:ring-2" type="email" name="email" id="email" placeholder="Email">
+            </div>
+
+            <div>
+                <label for="password" class="block text-sm font-medium text-gray-300">Password</label>
+                <input class="w-full px-3 py-2 bg-gray-500 border-gray-900 rounded-md mb-6" type="password" name="password" id="password" placeholder="Password">
+            </div>
+
+            <div class="flex justify-center items-center">
+                <button type="submit" class="w-4/12 bg-blue-700 pxs-1 py-1 rounded-md text-white hover:bg-blue-800 shadow-2xl">Register</button>
+            </div>
+        </form>
+      </div>
+       
+</body>
+</html>
