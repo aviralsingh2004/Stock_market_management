@@ -22,7 +22,6 @@ export const Signup = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    console.log('Attempting to send signup data:', formData);
 
     try {
       const response = await fetch('http://localhost:4000/signUpPost', {
@@ -33,18 +32,16 @@ export const Signup = () => {
         body: JSON.stringify(formData)
       });
 
-      console.log('Response received:', response.status);
       const data = await response.json();
-      console.log('Response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Signup failed');
       }
 
-      // If signup successful, navigate to login page
-      navigate('/login');
+      // If signup successful, navigate to home page
+      navigate('/home');
     } catch (err) {
-      console.error('Detailed error:', err);
+      console.error('Error:', err);
       setError(err.message);
     }
   };

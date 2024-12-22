@@ -147,10 +147,7 @@ app.post('/signUpPost', async (req, res) => {
         await con.query(insertQuery, values);
 
         console.log("New user created successfully:", email);
-        res.sendFile(path.join(__dirname, 'public', 'home.html'));
-
-        // Redirect to home page or send a success message
-       // res.status(201).json({ message: "User registered successfully" });
+        res.status(201).json({ message: "User registered successfully" });
     } catch (err) {
         console.error("Error processing sign-up:", err);
         res.status(500).json({ error: "Internal server error" });
