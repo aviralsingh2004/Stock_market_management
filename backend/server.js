@@ -39,30 +39,30 @@ const con = new Client({
 con.connect()
     .then(async () => {
         console.log("DB connected");
-        await initializeDatabase(); // Initialize tables
+        // await initializeDatabase(); // Initialize tables
     })
     .catch((err) => console.error("DB connection error: ", err));
 
 // Function to initialize database tables
-async function initializeDatabase() {
-    try {
-        const sqlFilePath = path.join(__dirname, 'db', 'tables.sql');
-        const sqlCommands = fs.readFileSync(sqlFilePath, 'utf8');
-        await con.query(sqlCommands);
-        console.log("Tables initialized successfully");
-    } catch (err) {
-        console.error("Error initializing tables:", err);
-    }
-}
+// async function initializeDatabase() {
+//     try {
+//         const sqlFilePath = path.join(__dirname, 'db', 'tables.sql');
+//         const sqlCommands = fs.readFileSync(sqlFilePath, 'utf8');
+//         await con.query(sqlCommands);
+//         console.log("Tables initialized successfully");
+//     } catch (err) {
+//         console.error("Error initializing tables:", err);
+//     }
+// }
 
-// Routes
-app.get('/form', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// // Routes
+// app.get('/form', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
 
-app.get('/signup', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'signup.html'));
-});
+// app.get('/signup', (req, res) => {
+//     res.sendFile(path.join(__dirname, 'public', 'signup.html'));
+// });
 
 app.post('/formPost', async (req, res) => {
     try {
@@ -154,6 +154,45 @@ app.post('/signUpPost', async (req, res) => {
     }
 });
 
+// Add this new endpoint after your existing routes
+app.get('/api/companies', async (req, res) => {
+    try {
+        const query = `
+            SELECT symbol, date, open, high, low, close, volume 
+            FROM world_companies 
+            WHERE date = (SELECT MAX(date) FROM world_companies)
+            ORDER BY symbol
+        `;
+        
+        const result = await con.query(query);
+        console.log("Companies data fetched:", result.rows.length, "records");
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching companies:", err);
+        res.status(500).json({ error: "Error fetching company data" });
+    }
+});
+
+// this is the endpoint for particular company searched using symbol
+app.get('/api/historical/:symbol', async (req, res) => {
+    try {
+        const { symbol } = req.params;
+        const query = `
+            SELECT date, open, high, low, close, volume 
+            FROM world_companies 
+            WHERE symbol = $1 
+            ORDER BY date DESC 
+            LIMIT 30
+        `;
+        
+        const result = await con.query(query, [symbol]);
+        console.log(`Historical data fetched for ${symbol}:`, result.rows.length, "records");
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Error fetching historical data:", err);
+        res.status(500).json({ error: "Error fetching historical data" });
+    }
+});
 
 // Start the server
 app.listen(port, () => {
