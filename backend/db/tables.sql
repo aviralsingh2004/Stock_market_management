@@ -1,70 +1,84 @@
--- -- Create the USERS table if it doesn't already exist
--- CREATE TABLE IF NOT EXISTS USERS (
---     uuid VARCHAR(25) PRIMARY KEY NOT NULL,
---     first_name VARCHAR(30),
---     last_name VARCHAR(30),
---     email VARCHAR(250),
---     password_hash TEXT,
---     dp_uri TEXT
--- );
+-- -- contains info about the users of the application
+ CREATE TABLE IF NOT EXISTS USERS(
+     uuid TEXT PRIMARY KEY NOT NULL,
+     first_name TEXT ,
+     last_name TEXT,
+     email TEXT,
+     password_hash TEXT,
+      dp_uri  TEXT  -- convert img to dataURI and store in db
+ );
 
--- CREATE TABLE IF NOT EXISTS stocks (
---     id SERIAL PRIMARY KEY,
---     company_name VARCHAR(255),
---     symbol VARCHAR(20),
---     market_cap NUMERIC,
---     price NUMERIC
--- );
-
-
--- -- Create other tables in the same manner
--- CREATE TABLE IF NOT EXISTS US_COMPANIES (
---     usuid VARCHAR(25) PRIMARY KEY NOT NULL,
---     name VARCHAR(200),
---     symbol VARCHAR(10),
---     industry VARCHAR(50),
+-- -- holds data of s&p500 companies
+-- CREATE TABLE US_COMPANIES(
+--     usuid TEXT PRIMARY KEY NOT NULL,
+--     name TEXT,
+--     symbol TEXT,
+--     industry TEXT,
 --     description TEXT,
---     no_equity BIGINT
+--     no_equity REAL -- total no of outstanding shares to calculate the marketcap
 -- );
 
--- CREATE TABLE IF NOT EXISTS IND_COMPANIES (
---     inuid VARCHAR(25) PRIMARY KEY NOT NULL,
---     name VARCHAR(200),
---     symbol VARCHAR(10),
---     industry VARCHAR(50),
+-- -- holds data of nifty 100 companies
+-- CREATE TABLE IND_COMPANIES(
+--     inuid TEXT PRIMARY KEY NOT NULL,
+--     name TEXT,
+--     symbol TEXT,
+--     industry TEXT,
 --     description TEXT,
---     no_equity BIGINT
+--     no_equity REAL
 -- );
 
--- CREATE TABLE IF NOT EXISTS COMPANY_INDEXES (
---     cuid VARCHAR(25) PRIMARY KEY NOT NULL,
---     name VARCHAR(200),
---     symbol VARCHAR(10),
---     no_equity BIGINT,
---     price INTEGER,
---     change INTEGER,
+-- -- holds all companies in US_COMPANIES and IND_COMPANIES will hold the price of the stocks for the day and the change
+-- CREATE TABLE COMPANY_INDEXES(
+--     cuid TEXT PRIMARY KEY NOT NULL,
+--     name TEXT,
+--     symbol TEXT,  -- symbol symbol of stock 
+--     no_equity REAL,
+--     price INTEGER, -- todays price of the stock
+--     change INTEGER, -- yesturday and today price change
 --     FOREIGN KEY (cuid) REFERENCES US_COMPANIES(usuid),
 --     FOREIGN KEY (cuid) REFERENCES IND_COMPANIES(inuid)
 -- );
 
--- CREATE TABLE IF NOT EXISTS TRANSACTIONS (
---     tuid VARCHAR(25) PRIMARY KEY NOT NULL,
---     uuid VARCHAR(25),
---     symbol VARCHAR(10),
---     order_type VARCHAR(5),
---     date TEXT,
+-- -- will have each info about each transactions BUY or SELL and the qty and amount at which the order was exicuted.
+-- CREATE TABLE TRANSACTIONS(
+--     tuid TEXT PRIMARY KEY NOT NULL,
+--     uuid TEXT,
+--     symbol TEXT,
+--     order_type TEXT, -- buy or sell
+--     date TEXT, -- ('yyyy-MM-dd HH:mm:ss') ISO8601
 --     qty INTEGER,
---     price INTEGER,
+--     price INTEGER, -- price of stock while the transaction
 --     FOREIGN KEY (uuid) REFERENCES USERS(uuid)
 -- );
 
--- CREATE TABLE IF NOT EXISTS FUND_TRANSACTIONS (
---     tuid VARCHAR(25) PRIMARY KEY NOT NULL,
---     uuid VARCHAR(25),
---     type VARCHAR(10),
+-- -- the funds that the users have added to their account for trading the stocks
+-- CREATE TABLE FUND_TRANSACTIONS(
+--     tuid TEXT PRIMARY KEY NOT NULL,
+--     uuid TEXT, -- who made the deposite
+--     type TEXT, -- DEPosite or WITHdrawal 
 --     amount INTEGER,
---     date DATE
+--     date TEXT -- ('dd-mm-yyyy') ISO8601
 -- );
 
 
+-- --! INSERT QUERIES
+-- INSERT INTO US_COMPANIES VALUES("","TESLA INC", "TESLA", 21323132132124)
+CREATE TABLE IF NOT EXISTS WALLET(
+    tuid TEXT PRIMARY KEY NOT NULL,
+    uuid TEXT, -- who made the deposite
+    type TEXT, -- DEPosite or WITHdrawal 
+    amount INTEGER,
+    date TEXT -- ('dd-mm-yyyy') ISO8601
+);
 
+CREATE TABLE IF NOT EXISTS WORLD_COMPANIES (
+      id SERIAL PRIMARY KEY,
+      symbol VARCHAR(10) NOT NULL,
+      date DATE NOT NULL,
+      open FLOAT,
+      high FLOAT,
+      low FLOAT,
+      close FLOAT,
+      volume BIGINT
+    );

@@ -137,7 +137,7 @@ export const Home = () => {
       <div className="table-container">
         <table>
           <thead>
-            <tr>
+            <tr className="table-row">
               <th>Symbol</th>
               <th>Date</th>
               <th>Open ($)</th>

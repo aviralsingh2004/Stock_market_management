@@ -6,6 +6,7 @@ import pkg from 'pg'; // Import the entire 'pg' package
 const { Client } = pkg; // Destructure the 'Client' class from the package
 import bcrypt from 'bcrypt';
 import cors from 'cors';
+import { error } from 'console';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -30,8 +31,8 @@ app.use(cors({
 const con = new Client({
     host: "localhost",
     user: "postgres",
-    port: 5000,
-    password: "Aviral@2002", // Replace with your actual password
+    port: 5432,
+    password: "yash2002@annu", // Replace with your actual password
     database: "trade"
 });
 
@@ -39,21 +40,24 @@ const con = new Client({
 con.connect()
     .then(async () => {
         console.log("DB connected");
-        // await initializeDatabase(); // Initialize tables
+         await initializeDatabase(); // Initialize tables
     })
     .catch((err) => console.error("DB connection error: ", err));
 
 // Function to initialize database tables
-// async function initializeDatabase() {
-//     try {
-//         const sqlFilePath = path.join(__dirname, 'db', 'tables.sql');
-//         const sqlCommands = fs.readFileSync(sqlFilePath, 'utf8');
-//         await con.query(sqlCommands);
-//         console.log("Tables initialized successfully");
-//     } catch (err) {
-//         console.error("Error initializing tables:", err);
-//     }
-// }
+//console.log("reached here")
+ async function initializeDatabase() {
+     try {
+         const sqlFilePath = path.join(__dirname, 'db', 'tables.sql');
+         const sqlCommands = fs.readFileSync(sqlFilePath, 'utf8');
+         await con.query(sqlCommands);
+         console.log("Tables initialized successfully");
+     } catch (err) {
+        console.error("Error initializing tables:",err);
+    }
+ }
+
+//  console.log("reached here")
 
 // // Routes
 // app.get('/form', (req, res) => {

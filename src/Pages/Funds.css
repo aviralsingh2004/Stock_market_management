@@ -1,0 +1,141 @@
+/* Body styles */
+.login-container{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+   /* min-height:100vh; */
+    margin: 0;
+}
+.body-style {
+    background-color: #1a1a1a;
+    background-image: radial-gradient(circle, #2d2d2d, #1a1a1a, #2d2d2d);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+/* Form container */
+.form-container {
+    background-color: #4b5563;
+    border-radius: 8px;
+    padding: 32px;
+    box-shadow: 0px 10px 15px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 100%;
+}
+
+/* Form titfore */
+.form-title {
+    text-align: center;
+    font-weight: bold;
+    font-size: 24px;
+    color: #ffffff;
+    margin-bottom: 16px;
+}
+
+/* Form group */
+.form-group {
+    margin-bottom: 16px;
+}
+
+/* Form label */
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #d1d5db;
+    margin-bottom: 4px;
+}
+
+/* Form input */
+.form-input {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #6b7280;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 4px #2563eb;
+}
+
+/* Form button */
+.login-form-button {
+    /* display: grid; */
+    display: flex;
+    width: 33%;
+    background-color: #2563eb;
+    padding: 8px;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    align-items: flex-start;
+
+}
+
+.login-form-button:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.withdraw-form-button {
+    /* display: grid; */
+    display: flex;
+    width: 33%;
+    background-color: #2563eb;
+    padding: 8px;
+    border-radius: 4px;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    align-items: flex-end;
+
+}
+
+.withdraw-form-button:hover {
+    background-color: #1d4ed8;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Signup form button container */
+.form-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.error-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+  padding: 10px;
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.signup-link {
+  cursor: pointer;
+  text-align: center;
+  color: #007bff;
+  margin-top: 20px;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+}

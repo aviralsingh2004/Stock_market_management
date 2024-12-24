@@ -15,7 +15,9 @@ export const LandingPage = () => {
   };
 
   return (
-    <div className="landing-container">
+    <div>
+      <h1 className="outer-landing">Welcome to your Stock Management Application</h1>
+      <div className="landing-container">
       <ul className="nav-buttons">
         <li>
           <button onClick={handleLoginClick} className="nav-button">
@@ -28,6 +30,7 @@ export const LandingPage = () => {
           </button>
         </li>
         </ul>
+    </div>
     </div>
   )
 }
