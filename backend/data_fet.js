@@ -7,8 +7,8 @@ import axios from 'axios';
 const dbConfig = {
   host: 'localhost',
   user: 'postgres',
-  port: 5432,
-  password: 'yash2002@annu', // Replace with your actual password
+  port: 5000,
+  password: 'Aviral@2002', // Replace with your actual password
   database: 'trade'
 };
 
