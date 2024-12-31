@@ -8,6 +8,7 @@ const { Client } = pkg; // Destructure the 'Client' class from the package
 import bcrypt from 'bcrypt';
 import cors from 'cors';
 import { error } from 'console';
+import { stringify } from 'querystring';
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -290,7 +291,8 @@ app.get('/api/real-time-data/:symbol',async (req,res)=>{
         `;
         const result = await con.query(query, [symbol]);
         console.log(`Real-time data fetched for ${symbol}:`, result.rows.length, "records");
-        res.json(result.rows);
+        const result1 = stringify(result.rows[0]);
+        res.json(result1);
     } catch(err){
         console.error("Error fetching real-time data:", err);
         res.status(500).json({ error: "Error fetching real-time data" });

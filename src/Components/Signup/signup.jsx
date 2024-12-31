@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom';
 import './signup.css';
-
+import { SparklesCore } from "../ui/sparkles";
 export const Signup = () => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -48,14 +48,27 @@ export const Signup = () => {
 
   return (
     <div>
-      <div className="body-style">
+      <div className="bg-black min-h-screen flex items-center justify-center overflow-hidden relative">
+        <div className="absolute inset-0">
+                <SparklesCore
+                  id="tsparticlesfullpage"
+                  background="transparent"
+                  minSize={0.6}
+                  maxSize={1.4}
+                  particleDensity={100}
+                  className="w-full h-full pointer-events-none"
+                  particleColor="#FFFFFF"
+                />
+              </div>
+          <div className="bg-transparent p-6 rounded-lg shadow-md relative z-10 max-w-md w-full">
+            <h2 className = "text-2xl font-bold text-center mb-4 text-white">Sign up</h2>
+          {error && <div className="">{error}</div>}
         <form onSubmit={handleSubmit} className="signupform">
-          {error && <div className="error-message">{error}</div>}
           
-          <div className="form-group">
-            <label htmlFor="firstName" className="form-label">First Name</label>
+          <div className="mb-4">
+            <label htmlFor="firstName" className="block text-white font-bold mb-1">First Name</label>
             <input 
-              className="form-input" 
+              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white" 
               type="text" 
               name="firstName" 
               id="firstName" 
@@ -66,10 +79,10 @@ export const Signup = () => {
             />
           </div>
           
-          <div className="form-group">
-            <label htmlFor="lastName" className="form-label">Last Name</label>
+          <div className="mb-4">
+            <label htmlFor="lastName" className="block text-white font-bold mb-1">Last Name</label>
             <input 
-              className="form-input" 
+              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white" 
               type="text" 
               name="lastName" 
               id="lastName" 
@@ -79,10 +92,10 @@ export const Signup = () => {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">Email</label>
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-white font-bold mb-1">Email</label>
             <input 
-              className="form-input" 
+              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white" 
               type="email" 
               name="email" 
               id="email" 
@@ -93,10 +106,10 @@ export const Signup = () => {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">Password</label>
+          <div className="mb-4">
+            <label htmlFor="password" className="block text-white font-bold mb-1">Password</label>
             <input
-              className="form-input"
+              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white"
               type="password" 
               name="password" 
               id="password" 
@@ -107,10 +120,11 @@ export const Signup = () => {
             />
           </div>
 
-          <div className="form-button-container">
-            <button type="submit" className="form-button">Register</button>
+          <div className="mb-4">
+            <button type="submit" className="text-white border rounded-lg px-2 py-1 mt-2 bg-transparent  hover:bg-white hover:text-black transition duration-200">Register</button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

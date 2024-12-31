@@ -15,11 +15,15 @@
     "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
+    "groq": "^3.68.3",
+    "groq-sdk": "^0.9.1",
     "jsonwebtoken": "^9.0.2",
     "node-fetch": "^3.3.2",
     "pg": "^8.13.1",
     "postgres": "^3.4.5",
-    "puppeteer": "^23.11.1"
+    "puppeteer": "^23.11.1",
+    "readline-sync": "^1.4.10"
   }
 }

@@ -21,13 +21,13 @@ export const Navbar = () => {
     <div className='navbar'>
         <div>
             <ul className='nav-menu'>
-                <li><button onClick={handleClick}>Home</button></li>
+                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick}>Home</button></li>
                 {/* <li onClick={()=>setMenu("portfolio")}>Portfolio{menu==="portfolio"?<hr/>:<></>}</li> */}
-                <li><button onClick={handleClick2}>Portfolio</button></li>
+                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick2}>Portfolio</button></li>
                 {/* <li onClick={()=>setMenu("trade")}>Trade{menu==="trade"?<hr />:<></>}</li> */}
-                <li><button onClick={handleClick3}>Trade</button></li>
+                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick3}>Trade</button></li>
                 {/* <li onClick={()=>setMenu("funds")}>funds{menu==="funds"?<hr/>:<></>}</li>*/}
-                <li><button onClick={handleClick4}>Funds</button></li>
+                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick4}>Funds</button></li>
             </ul>
         </div>
     </div>
