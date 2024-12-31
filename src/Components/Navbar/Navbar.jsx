@@ -18,16 +18,16 @@ export const Navbar = () => {
         navigate("/funds");
     }
   return (
-    <div className='navbar'>
+    <div className='bg-black'>
         <div>
             <ul className='nav-menu'>
-                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick}>Home</button></li>
+                <li><button class="text-white border rounded-lg px-2 py-1 mt-2 bg-transparent  hover:bg-white hover:text-black transition duration-200" onClick={handleClick}>Home</button></li>
                 {/* <li onClick={()=>setMenu("portfolio")}>Portfolio{menu==="portfolio"?<hr/>:<></>}</li> */}
-                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick2}>Portfolio</button></li>
+                <li><button class="text-white border rounded-lg px-2 py-1 mt-2 bg-transparent  hover:bg-white hover:text-black transition duration-200" onClick={handleClick2}>Portfolio</button></li>
                 {/* <li onClick={()=>setMenu("trade")}>Trade{menu==="trade"?<hr />:<></>}</li> */}
-                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick3}>Trade</button></li>
+                <li><button class="text-white border rounded-lg px-2 py-1 mt-2 bg-transparent  hover:bg-white hover:text-black transition duration-200" onClick={handleClick3}>Trade</button></li>
                 {/* <li onClick={()=>setMenu("funds")}>funds{menu==="funds"?<hr/>:<></>}</li>*/}
-                <li><button class="bg-sky-500 hover:bg-sky-700 ..." onClick={handleClick4}>Funds</button></li>
+                <li><button class="text-white border rounded-lg px-2 py-1 mt-2 bg-transparent  hover:bg-white hover:text-black transition duration-200" onClick={handleClick4}>Funds</button></li>
             </ul>
         </div>
     </div>

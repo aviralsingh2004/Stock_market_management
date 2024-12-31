@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './home.css';
 import Navbar from '../Components/Navbar/Navbar';
 import { Line } from 'react-chartjs-2';
@@ -31,6 +31,7 @@ export const Home = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [historicalData, setHistoricalData] = useState(null);
+  const chartRef = useRef(null); // Ref for chart container
 
   useEffect(() => {
     fetchCompanies();
@@ -61,36 +62,47 @@ export const Home = () => {
       const data = await response.json();
       setHistoricalData(data);
       setSelectedCompany(symbol);
+      scrollToChart(); // Scroll to the chart after selecting a company
     } catch (err) {
       console.error('Error fetching historical data:', err);
       setError('Failed to load historical data');
     }
   };
 
+  const scrollToChart = () => {
+    chartRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
+    if (e.target.value.trim() !== '') {
+      setHistoricalData(null); // Hide chart during search
+      setSelectedCompany(null);
+    }
   };
 
   const handleCompanySelect = (symbol) => {
     fetchHistoricalData(symbol);
   };
 
-  const filteredCompanies = companies.filter(company =>
+  const filteredCompanies = companies.filter((company) =>
     company.symbol.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const chartData = historicalData ? {
-    labels: historicalData.map(data => new Date(data.date).toLocaleDateString()),
-    datasets: [
-      {
-        label: `${selectedCompany} Stock Price`,
-        data: historicalData.map(data => data.close),
-        fill: false,
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.1
+  const chartData = historicalData
+    ? {
+        labels: historicalData.map((data) => new Date(data.date).toLocaleDateString()),
+        datasets: [
+          {
+            label: `${selectedCompany} Stock Price`,
+            data: historicalData.map((data) => data.close),
+            fill: true,
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1,
+          },
+        ],
       }
-    ]
-  } : null;
+    : null;
 
   const chartOptions = {
     responsive: true,
@@ -100,24 +112,24 @@ export const Home = () => {
       },
       title: {
         display: true,
-        text: 'Stock Price History'
-      }
+        text: 'Stock Price History',
+      },
     },
     scales: {
       y: {
-        beginAtZero: false
-      }
-    }
+        beginAtZero: false,
+      },
+    },
   };
 
   if (loading) return <div className="loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
   return (
-    <div className="container">
+    <div className="bg-black">
       <Navbar />
-      <h1>Stock Market Management</h1>
-      
+      <div className="mt-5 mb-5 font-bold text-4xl">Stock Listing</div>
+
       <div className="search-container">
         <input
           type="text"
@@ -129,38 +141,40 @@ export const Home = () => {
       </div>
 
       {historicalData && (
-        <div className="chart-container">
+        <div className="chart-container" ref={chartRef}>
           <Line data={chartData} options={chartOptions} />
         </div>
       )}
 
-      <div className="table-container">
-        <table>
+      <div className="bg-transparent p-6 rounded-2xl shadow-md relative z-10 max-w w-full">
+        <table className="bg-black rounded-2xl text-white">
           <thead>
-            <tr className="table-row">
-              <th>Symbol</th>
-              <th>Date</th>
-              <th>Open ($)</th>
-              <th>High ($)</th>
-              <th>Low ($)</th>
-              <th>Close ($)</th>
-              <th>Volume</th>
-              <th>Action</th>
+            <tr className="bg-transparent">
+              <th className="ml-1">Symbol</th>
+              <th className="ml-1">Date</th>
+              <th className="ml-5">Open ($)</th>
+              <th className="ml-1">High ($)</th>
+              <th className="ml-1">Low ($)</th>
+              <th className="ml-1">Close ($)</th>
+              <th className="ml-1">Volume</th>
+              <th className="ml-1">Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredCompanies.map((company, index) => (
               <tr key={index}>
-                <td>{company.symbol}</td>
-                <td>{new Date(company.date).toLocaleDateString()}</td>
-                <td>{company.open.toFixed(2)}</td>
-                <td>{company.high.toFixed(2)}</td>
-                <td>{company.low.toFixed(2)}</td>
-                <td>{company.close.toFixed(2)}</td>
-                <td>{company.volume.toLocaleString()}</td>
-                <td>
-                  <button 
-                    className="view-graph-btn"
+                <td className="text-white">{company.symbol}</td>
+                <td className="text-white">
+                  {new Date(company.date).toLocaleDateString()}
+                </td>
+                <td className="text-white">{company.open.toFixed(2)}</td>
+                <td className="text-white">{company.high.toFixed(2)}</td>
+                <td className="text-white">{company.low.toFixed(2)}</td>
+                <td className="text-white">{company.close.toFixed(2)}</td>
+                <td className="text-white">{company.volume.toLocaleString()}</td>
+                <td className="text-white">
+                  <button
+                    className="bg-transparent text-white border py-1 px-2 rounded-lg hover:bg-white hover:text-black transition duration-200"
                     onClick={() => handleCompanySelect(company.symbol)}
                   >
                     View Graph
