@@ -101,4 +101,4 @@ async function scrapeAndStoreStockData() {
 }
 
 // Export the named function for reuse in other files
-export default scrapeAndStoreStockData;
+scrapeAndStoreStockData()

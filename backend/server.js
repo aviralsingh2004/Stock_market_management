@@ -2,6 +2,9 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import puppeteer from 'puppeteer';
+import Groq from "groq-sdk";
+import readline from "readline/promises"; // Use the promises API
+import { stdin as input, stdout as output } from "process";
 import fs from 'fs';
 import pkg from 'pg'; // Import the entire 'pg' package
 const { Client } = pkg; // Destructure the 'Client' class from the package
@@ -17,7 +20,7 @@ const __dirname = path.dirname(__filename);
 const port = 4000;
 
 const app = express();
-
+const API_KEY = "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";
 // API middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -45,7 +48,9 @@ con.connect()
         //  await initializeDatabase(); // Initialize tables
     })
     .catch((err) => console.error("DB connection error: ", err));
-
+const groq = new Groq({
+  apiKey: API_KEY,
+});
 // Function to initialize database tables
 //console.log("reached here")
 //  async function initializeDatabase() {
@@ -299,6 +304,182 @@ app.get('/api/real-time-data/:symbol',async (req,res)=>{
     }
 });
 // this is the endpoint for particular company searched using symbol
+// Function to get all table names from the database
+const getAllTables = async () => {
+  const query = `
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public';
+  `;
+  try {
+      const result = await con.query(query);
+      return result.rows.map(row => row.table_name);
+  } catch (error) {
+      console.error("Error fetching tables:", error);
+      throw error;
+  }
+};
+
+// Function to get structure for all tables
+const getTableStructures = async () => {
+  const dbStructure = {};
+  try {
+      const query = `
+          SELECT 
+              table_name,
+              column_name,
+              data_type
+          FROM 
+              information_schema.columns
+          WHERE 
+              table_schema = 'public'
+          ORDER BY 
+              table_name, ordinal_position;
+      `;
+      
+      const result = await con.query(query);
+      
+      // Organize results by table
+      result.rows.forEach(row => {
+          if (!dbStructure[row.table_name]) {
+              dbStructure[row.table_name] = [];
+          }
+          dbStructure[row.table_name].push({
+              column: row.column_name,
+              type: row.data_type
+          });
+      });
+      
+      return dbStructure;
+  } catch (error) {
+      console.error("Error fetching table structures:", error);
+      throw error;
+  }
+};
+
+// Function to generate SQL query based on prompt and schema
+const generateSQLQuery = async (prompt, dbStructure) => {
+  // Create a detailed schema description for the AI
+  let schemaDescription = '';
+
+// Loop through each table in dbStructure
+for (const tableName in dbStructure) {
+    const columns = dbStructure[tableName];
+    let columnDesc = '';
+    
+    // Loop through each column in the table
+    for (let i = 0; i < columns.length; i++) {
+        // Add column name and type
+        columnDesc += `${columns[i].column}: ${columns[i].type}`;
+        
+        // Add comma if not the last column
+        if (i < columns.length - 1) {
+            columnDesc += ', ';
+        }
+    }
+    
+    // Add table description to main string
+    schemaDescription += `Table ${tableName} has columns: ${columnDesc}`;
+    
+    // Add newline if not the last table
+    if (tableName !== Object.keys(dbStructure)[Object.keys(dbStructure).length - 1]) {
+        schemaDescription += '\n';
+    }
+}
+
+// console.log(schemaDescription);
+  const completion = await groq.chat.completions.create({
+      messages: [
+          {
+              role: "system",
+              content: `You are an SQL expert. You have access to the following database schema:\n${schemaDescription}\n
+              Your task is to only generate valid SQL queries that perform READ operations (SELECT statements) on the available tables.
+              Do not generate any INSERT, UPDATE, DELETE or other modification queries.
+              Use appropriate JOINs and WHERE clauses as needed to answer the user's question.
+              If something is asked that requires modifying the database, respond with 'This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.'
+              Return only the SQL query without any explanation.`
+          },
+          {
+              role: "user",
+              content: prompt
+          }
+      ],
+      model: "llama3-70b-8192",
+      temperature: 0.2,
+      max_tokens: 512,
+      top_p: 1,
+      stream: false
+  });
+
+  return completion.choices[0]?.message?.content.trim();
+};
+
+// Function to interpret query results based on prompt
+const interpretResults = async (prompt, queryResults, query) => {
+  const completion = await groq.chat.completions.create({
+      messages: [
+          {
+              role: "system",
+              content: `You are an expert at interpreting database results and answering questions. 
+                       Given a query and its results, provide a clear answer to the user's question.
+                       Focus on answering the specific question asked in the prompt.`
+          },
+          {
+              role: "user",
+              content: `Original question: ${prompt}\n
+                       Query executed: ${query}\n
+                       Results: ${JSON.stringify(queryResults)}\n
+                       Please answer the original question based on these results.`
+          }
+      ],
+      model: "llama3-70b-8192",
+      temperature: 0.3,
+      max_tokens: 150,
+      top_p: 1,
+      stream: false
+  });
+
+  return completion.choices[0]?.message?.content;
+};
+
+// Main API endpoint
+app.post('/api/processPrompt', async (req, res) => {
+  let sqlQuery;
+  try {
+      const { prompt } = req.body;
+      if (!prompt) {
+          return res.status(400).json({ error: "Prompt is required" });
+      }
+
+      // Step 1: Get database schema (can be cached for better performance)
+      const dbStructure = await getTableStructures();
+      // console.log("Database Structure:", dbStructure);
+      
+      // Step 2: Generate SQL query based on schema and prompt
+      sqlQuery = await generateSQLQuery(prompt, dbStructure);
+      console.log("Generated SQL Query:", sqlQuery);
+      const sqlquerytrim = sqlQuery.replace(/^```|```$/g, '').trim();
+      // Step 3: Execute the query
+      const queryResult = await con.query(sqlquerytrim);
+      console.log("Query Results:", queryResult.rows);
+      
+      // Step 4: Interpret results in context of the original prompt
+      const interpretation = await interpretResults(prompt, queryResult.rows, sqlQuery);
+
+      // Send response
+      res.json({
+          response: interpretation,
+          query: sqlQuery,
+          rawResults: queryResult.rows
+      });
+
+  } catch (err) {
+      console.error("Error processing prompt:", err);
+      res.status(500).json({ error: "Internal server error",
+                            response:sqlQuery
+       });
+  }
+});
 app.get('/api/historical/:symbol', async (req, res) => {
     try {
         const { symbol } = req.params;
