@@ -74,7 +74,7 @@ const groq = new Groq({
 // app.get('/signup', (req, res) => {
 //     res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 // });
-
+let emailid="aviralpratapsingh2002@gmail.com";
 app.post('/formPost', async (req, res) => {
     try {
         console.log("Received login request:", req.body); // Debug log
@@ -110,6 +110,7 @@ app.post('/formPost', async (req, res) => {
 
         // Route to the home page if credentials are valid
         console.log("User authenticated successfully:", email);
+        emailid= email;
         res.status(200).json({ message: "Login successful" });
 
     } catch (err) {
@@ -146,16 +147,17 @@ app.post('/signUpPost', async (req, res) => {
         // Hash the password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
-
+        const total_balance = 0;
         // Insert new user into the USERS table
-        const uuid = `user-${Date.now()}`; // Generate a simple unique identifier
-        const insertQuery = `
-            INSERT INTO USERS (uuid, first_name, last_name, email, password_hash)
-            VALUES ($1, $2, $3, $4, $5)
-        `;
-        const values = [uuid, firstName, lastName, email, hashedPassword];
+        const user_id = `user-${Date.now()}`; // Generate a simple unique identifier
+        const query = `
+    INSERT INTO Users (user_id, first_name, last_name, email, password_hash, total_balance)
+    VALUES ($1, $2, $3, $4, $5, $6)
+`;
 
-        await con.query(insertQuery, values);
+        const values = [user_id, firstName, lastName, email, hashedPassword,total_balance];
+
+        await con.query(query, values);
 
         console.log("New user created successfully:", email);
         res.status(201).json({ message: "User registered successfully" });
@@ -164,7 +166,63 @@ app.post('/signUpPost', async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
-// Add this new endpoint for fetching real time company data
+//api endpoint for finding total-balance
+app.get('/api/user/balance', async (req,res)=>{
+    try{
+        const email = emailid;
+        if(email==undefined){
+            return res.status(401).json({error:"Not authenticated"});
+        }
+        const query = `SELECT total_balance FROM Users WHERE email = $1`;
+        const result = await con.query(query,[email]);
+        if(result.rows.length==0){
+            return res.status(400).json({error:"User not found"});
+        }
+        res.json({balance:parseFloat(result.rows[0].total_balance)});
+    } catch(err){
+        console.error("Error fetching balance:",err);
+        res.status(500).json({error:"Error fetching balance"});
+    }
+});
+// val funds
+app.post('/api/user/total_balance', async (req, res) => {
+    try {
+        const email = emailid; // Assuming you store email in session
+        if(email === undefined) {
+            return res.status(400).json({ error: "Email is required" });
+        }
+        
+        const { val,operation } = req.body;
+        if(val==undefined || isNaN(val) || val <=0){
+            return res.status(400).json({error:"Invalid amount"});
+        }
+        const query = 'SELECT total_balance FROM Users WHERE email = $1';
+        const result = await con.query(query, [email]);
+        if(result.rows.length==0){
+            return res.status(404).json({error:"User not found"});
+        }
+        // if(result.rows[0].total_balance==NaN){
+        //     result.rows[0].total_balance=0.0;
+        // }
+        let netamount;
+        if(operation=="add"){//remainder
+            netamount = parseFloat(result.rows[0].total_balance) + parseFloat(val);
+        }else if(operation=="withdraw"){
+            if(result.rows[0].total_balance-val < 0){
+                return res.status(400).json({error:"Insufficient balance"});
+            }
+            netamount= parseFloat(result.rows[0].total_balance) - parseFloat(val);
+        }
+        await con.query('UPDATE Users SET total_balance = $1 WHERE email = $2', 
+            [netamount, email]);
+        console.log("Balance updated successfully:", netamount);
+        res.json({ success: true, balance: netamount });
+    } catch(err) {
+        console.error("Error updating balance:", err);
+        res.status(500).json({ error: "Error updating balance" });
+    }
+});
+// val this new endpoint for fetching real time company data
 function getRandomShares(min, max) {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
@@ -269,7 +327,7 @@ app.get('/api/real-time-data', async (req, res) => {
     }
 });
 
-// Add this new endpoint after your existing routes
+// val this new endpoint after your existing routes
 app.get('/api/companies', async (req, res) => {
     try {
         const query = `
@@ -305,180 +363,157 @@ app.get('/api/real-time-data/:symbol',async (req,res)=>{
 });
 // this is the endpoint for particular company searched using symbol
 // Function to get all table names from the database
+// Function to get all table names from the database
+// Function to get all table names from the database
 const getAllTables = async () => {
-  const query = `
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public';
-  `;
-  try {
-      const result = await con.query(query);
-      return result.rows.map(row => row.table_name);
-  } catch (error) {
-      console.error("Error fetching tables:", error);
-      throw error;
-  }
+    const query = `
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public';
+    `;
+    try {
+        const result = await con.query(query);
+        return result.rows.map(row => row.table_name);
+    } catch (error) {
+        console.error("Error fetching tables:", error);
+        throw error;
+    }
 };
 
 // Function to get structure for all tables
 const getTableStructures = async () => {
-  const dbStructure = {};
-  try {
-      const query = `
-          SELECT 
-              table_name,
-              column_name,
-              data_type
-          FROM 
-              information_schema.columns
-          WHERE 
-              table_schema = 'public'
-          ORDER BY 
-              table_name, ordinal_position;
-      `;
-      
-      const result = await con.query(query);
-      
-      // Organize results by table
-      result.rows.forEach(row => {
-          if (!dbStructure[row.table_name]) {
-              dbStructure[row.table_name] = [];
-          }
-          dbStructure[row.table_name].push({
-              column: row.column_name,
-              type: row.data_type
-          });
-      });
-      
-      return dbStructure;
-  } catch (error) {
-      console.error("Error fetching table structures:", error);
-      throw error;
-  }
+    const dbStructure = {};
+    try {
+        const query = `
+            SELECT 
+                table_name,
+                column_name,
+                data_type
+            FROM 
+                information_schema.columns
+            WHERE 
+                table_schema = 'public'
+            ORDER BY 
+                table_name, ordinal_position;
+        `;
+        
+        const result = await con.query(query);
+        
+        // Organize results by table
+        result.rows.forEach(row => {
+            if (!dbStructure[row.table_name]) {
+                dbStructure[row.table_name] = [];
+            }
+            dbStructure[row.table_name].push({
+                column: row.column_name,
+                type: row.data_type
+            });
+        });
+        
+        return dbStructure;
+    } catch (error) {
+        console.error("Error fetching table structures:", error);
+        throw error;
+    }
 };
 
 // Function to generate SQL query based on prompt and schema
 const generateSQLQuery = async (prompt, dbStructure) => {
-  // Create a detailed schema description for the AI
-  let schemaDescription = '';
+    // Create a detailed schema description for the AI
+    const schemaDescription = Object.entries(dbStructure)
+        .map(([tableName, columns]) => {
+            const columnDesc = columns
+                .map(col => `${col.column}: ${col.type}`)
+                .join(', ');
+            return `Table ${tableName} has columns: ${columnDesc}`;
+        })
+        .join('\n');
 
-// Loop through each table in dbStructure
-for (const tableName in dbStructure) {
-    const columns = dbStructure[tableName];
-    let columnDesc = '';
-    
-    // Loop through each column in the table
-    for (let i = 0; i < columns.length; i++) {
-        // Add column name and type
-        columnDesc += `${columns[i].column}: ${columns[i].type}`;
-        
-        // Add comma if not the last column
-        if (i < columns.length - 1) {
-            columnDesc += ', ';
-        }
-    }
-    
-    // Add table description to main string
-    schemaDescription += `Table ${tableName} has columns: ${columnDesc}`;
-    
-    // Add newline if not the last table
-    if (tableName !== Object.keys(dbStructure)[Object.keys(dbStructure).length - 1]) {
-        schemaDescription += '\n';
-    }
-}
+    const completion = await groq.chat.completions.create({
+        messages: [
+            {
+                role: "system",
+                content: `You are an SQL expert who can only READ the database ,do not generate any queries  INSERT, UPDATE, DELETE or other modification queries otherwise  You have access to the following database schema:\n${schemaDescription}\n
+                Return only the SQL query without any explanation.
+                Generate a SQL query that answers the user's question. Use appropriate JOINs and WHERE if needed.`
+            },
+            {
+                role: "user",
+                content: prompt
+            }
+        ],
+        model: "llama3-70b-8192",
+        temperature: 0.2,
+        max_tokens: 512,
+        top_p: 1,
+        stream: false
+    });
 
-// console.log(schemaDescription);
-  const completion = await groq.chat.completions.create({
-      messages: [
-          {
-              role: "system",
-              content: `You are an SQL expert. You have access to the following database schema:\n${schemaDescription}\n
-              Your task is to only generate valid SQL queries that perform READ operations (SELECT statements) on the available tables.
-              Do not generate any INSERT, UPDATE, DELETE or other modification queries.
-              Use appropriate JOINs and WHERE clauses as needed to answer the user's question.
-              If something is asked that requires modifying the database, respond with 'This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.'
-              Return only the SQL query without any explanation.`
-          },
-          {
-              role: "user",
-              content: prompt
-          }
-      ],
-      model: "llama3-70b-8192",
-      temperature: 0.2,
-      max_tokens: 512,
-      top_p: 1,
-      stream: false
-  });
-
-  return completion.choices[0]?.message?.content.trim();
+    return completion.choices[0]?.message?.content.trim();
 };
 
 // Function to interpret query results based on prompt
 const interpretResults = async (prompt, queryResults, query) => {
-  const completion = await groq.chat.completions.create({
-      messages: [
-          {
-              role: "system",
-              content: `You are an expert at interpreting database results and answering questions. 
-                       Given a query and its results, provide a clear answer to the user's question.
-                       Focus on answering the specific question asked in the prompt.`
-          },
-          {
-              role: "user",
-              content: `Original question: ${prompt}\n
-                       Query executed: ${query}\n
-                       Results: ${JSON.stringify(queryResults)}\n
-                       Please answer the original question based on these results.`
-          }
-      ],
-      model: "llama3-70b-8192",
-      temperature: 0.3,
-      max_tokens: 150,
-      top_p: 1,
-      stream: false
-  });
+    const completion = await groq.chat.completions.create({
+        messages: [
+            {
+                role: "system",
+                content: `You are an expert at interpreting database results and answering questions. 
+                         Given a query and its results, provide a clear answer to the user's question.
+                         Focus on answering the specific question asked in the prompt.`
+            },
+            {
+                role: "user",
+                content: `Original question: ${prompt}\n
+                         Query executed: ${query}\n
+                         Results: ${JSON.stringify(queryResults)}\n
+                         Please answer the original question based on these results.`
+            }
+        ],
+        model: "llama3-70b-8192",
+        temperature: 0.3,
+        max_tokens: 150,
+        top_p: 1,
+        stream: false
+    });
 
-  return completion.choices[0]?.message?.content;
+    return completion.choices[0]?.message?.content;
 };
 
-// Main API endpoint
+// AI Inference API endpoint
 app.post('/api/processPrompt', async (req, res) => {
-  let sqlQuery;
-  try {
-      const { prompt } = req.body;
-      if (!prompt) {
-          return res.status(400).json({ error: "Prompt is required" });
-      }
+    try {
+        const { prompt } = req.body;
+        if (!prompt) {
+            return res.status(400).json({ error: "Prompt is required" });
+        }
 
-      // Step 1: Get database schema (can be cached for better performance)
-      const dbStructure = await getTableStructures();
-      // console.log("Database Structure:", dbStructure);
-      
-      // Step 2: Generate SQL query based on schema and prompt
-      sqlQuery = await generateSQLQuery(prompt, dbStructure);
-      console.log("Generated SQL Query:", sqlQuery);
-      const sqlquerytrim = sqlQuery.replace(/^```|```$/g, '').trim();
-      // Step 3: Execute the query
-      const queryResult = await con.query(sqlquerytrim);
-      console.log("Query Results:", queryResult.rows);
-      
-      // Step 4: Interpret results in context of the original prompt
-      const interpretation = await interpretResults(prompt, queryResult.rows, sqlQuery);
+        // Step 1: Get database schema (can be cached for better performance)
+        const dbStructure = await getTableStructures();
+        // console.log("Database Structure:", dbStructure);
+        
+        // Step 2: Generate SQL query based on schema and prompt
+        const sqlQuery = await generateSQLQuery(prompt, dbStructure);
+        console.log("Generated SQL Query:", sqlQuery);
+        const sqlquerytrim = sqlQuery.replace(/^```|```$/g, '').trim();
+        // Step 3: Execute the query
+        const queryResult = await con.query(sqlquerytrim);
+        console.log("Query Results:", queryResult.rows);
+        
+        // Step 4: Interpret results in context of the original prompt
+        const interpretation = await interpretResults(prompt, queryResult.rows, sqlQuery);
 
-      // Send response
-      res.json({
-          response: interpretation,
-          query: sqlQuery,
-          rawResults: queryResult.rows
-      });
+        // Send response
+        res.json({
+            response: interpretation,
+            query: sqlQuery,
+            rawResults: queryResult.rows
+        });
 
-  } catch (err) {
-      console.error("Error processing prompt:", err);
-      res.status(500).json({ error: "Internal server error",
-                            response:sqlQuery
-       });
-  }
+    } catch (err) {
+        console.error("Error processing prompt:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
 });
 app.get('/api/historical/:symbol', async (req, res) => {
     try {

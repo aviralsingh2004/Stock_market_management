@@ -1,84 +1,45 @@
--- -- contains info about the users of the application
- CREATE TABLE IF NOT EXISTS USERS(
-     uuid TEXT PRIMARY KEY NOT NULL,
-     first_name TEXT ,
-     last_name TEXT,
-     email TEXT,
-     password_hash TEXT,
-      dp_uri  TEXT  -- convert img to dataURI and store in db
- );
-
--- -- holds data of s&p500 companies
--- CREATE TABLE US_COMPANIES(
---     usuid TEXT PRIMARY KEY NOT NULL,
---     name TEXT,
---     symbol TEXT,
---     industry TEXT,
---     description TEXT,
---     no_equity REAL -- total no of outstanding shares to calculate the marketcap
--- );
-
--- -- holds data of nifty 100 companies
--- CREATE TABLE IND_COMPANIES(
---     inuid TEXT PRIMARY KEY NOT NULL,
---     name TEXT,
---     symbol TEXT,
---     industry TEXT,
---     description TEXT,
---     no_equity REAL
--- );
-
--- -- holds all companies in US_COMPANIES and IND_COMPANIES will hold the price of the stocks for the day and the change
--- CREATE TABLE COMPANY_INDEXES(
---     cuid TEXT PRIMARY KEY NOT NULL,
---     name TEXT,
---     symbol TEXT,  -- symbol symbol of stock 
---     no_equity REAL,
---     price INTEGER, -- todays price of the stock
---     change INTEGER, -- yesturday and today price change
---     FOREIGN KEY (cuid) REFERENCES US_COMPANIES(usuid),
---     FOREIGN KEY (cuid) REFERENCES IND_COMPANIES(inuid)
--- );
-
--- -- will have each info about each transactions BUY or SELL and the qty and amount at which the order was exicuted.
--- CREATE TABLE TRANSACTIONS(
---     tuid TEXT PRIMARY KEY NOT NULL,
---     uuid TEXT,
---     symbol TEXT,
---     order_type TEXT, -- buy or sell
---     date TEXT, -- ('yyyy-MM-dd HH:mm:ss') ISO8601
---     qty INTEGER,
---     price INTEGER, -- price of stock while the transaction
---     FOREIGN KEY (uuid) REFERENCES USERS(uuid)
--- );
-
--- -- the funds that the users have added to their account for trading the stocks
--- CREATE TABLE FUND_TRANSACTIONS(
---     tuid TEXT PRIMARY KEY NOT NULL,
---     uuid TEXT, -- who made the deposite
---     type TEXT, -- DEPosite or WITHdrawal 
---     amount INTEGER,
---     date TEXT -- ('dd-mm-yyyy') ISO8601
--- );
-
-
--- --! INSERT QUERIES
--- INSERT INTO US_COMPANIES VALUES("","TESLA INC", "TESLA", 21323132132124)
-CREATE TABLE IF NOT EXISTS WALLET(
-    tuid TEXT PRIMARY KEY NOT NULL,
-    uuid TEXT, -- who made the deposite
-    type TEXT, -- DEPosite or WITHdrawal 
-    amount INTEGER,
-    date TEXT -- ('dd-mm-yyyy') ISO8601
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    total_balance NUMERIC(15, 2) DEFAULT 0,
+    role VARCHAR(20) CHECK (role IN ('Investor', 'Broker')) NOT NULL
 );
-
-CREATE TABLE IF NOT EXISTS WORLD_COMPANIES (
-      id SERIAL PRIMARY KEY,
-      symbol VARCHAR(10) NOT NULL,
-      date DATE NOT NULL,
-      open FLOAT,
-      high FLOAT,
-      low FLOAT,
-      close FLOAT,
-      volume BIGINT
-    );
+CREATE TABLE Companies (
+    company_id SERIAL PRIMARY KEY,
+    company_name VARCHAR(100) UNIQUE NOT NULL,
+    ticker_symbol VARCHAR(10) UNIQUE NOT NULL,
+    stock_price NUMERIC(10, 2) NOT NULL,
+    total_shares INT NOT NULL
+);
+CREATE TABLE Stocks (
+    stock_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
+    quantity INT NOT NULL,
+    average_price NUMERIC(10, 2),
+    UNIQUE (user_id, company_id) -- Prevents duplicate records for the same user and company
+);
+CREATE TABLE Transactions (
+    transaction_id SERIAL PRIMARY KEY,
+    user_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
+    transaction_type VARCHAR(10) CHECK (transaction_type IN ('BUY', 'SELL')) NOT NULL,
+    quantity INT NOT NULL,
+    price_per_share NUMERIC(10, 2) NOT NULL,
+    total_amount NUMERIC(15, 2) NOT NULL,
+    transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Tracks the exact time of the transaction
+);
+CREATE TABLE MarketData (
+    market_data_id SERIAL PRIMARY KEY,
+    company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    open_price NUMERIC(10, 2) NOT NULL,
+    close_price NUMERIC(10, 2) NOT NULL,
+    high_price NUMERIC(10, 2) NOT NULL,
+    low_price NUMERIC(10, 2) NOT NULL,
+    volume INT NOT NULL,
+    UNIQUE (company_id, date)
+);

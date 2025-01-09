@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
+import Navbar from '../Components/Navbar/Navbar';
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
     { role: 'assistant', content: 'Hello! How can I help you today?' }
@@ -66,14 +66,15 @@ const ChatInterface = () => {
 
   return (
     <div className="flex h-screen flex-col bg-black">
+      <Navbar />
       {/* Header */}
       <div className="bg-black border-b border-gray-700 p-4">
-        <h1 className="text-xl font-semibold text-center text-white"> Query Pro</h1>
+        <h1 className="text-xl font-semibold text-center text-white"> DataBridge AI</h1>
       </div>
 
       {/* Chat Container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-    {messages.map((message, index) => (
+      <div className="flex-1 text-left overflow-y-auto p-4 space-y-4">
+        {messages.map((message, index) => (
         <div
             key={index}
             className={`flex items-start space-x-4 p-4 rounded-lg ${
@@ -96,7 +97,7 @@ const ChatInterface = () => {
                 </p>
             </div>
         </div>
-    ))}
+      ))}
     {isLoading && (
         <div className="text-gray-400 p-4">
             <span>Thinking...</span>

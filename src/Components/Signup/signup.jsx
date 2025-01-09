@@ -39,7 +39,7 @@ export const Signup = () => {
       }
 
       // If signup successful, navigate to home page
-      navigate('/home');
+      navigate('/login');
     } catch (err) {
       console.error('Error:', err);
       setError(err.message);

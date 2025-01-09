@@ -42,7 +42,7 @@ client.connect((err) => {
 
   // Create the WORLD_COMPANIES table
   const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS WORLD_COMPANIES (
+    CREATE TABLE IF NOT EXISTS MarketData (
       id SERIAL PRIMARY KEY,
       symbol VARCHAR(10) NOT NULL,
       date DATE NOT NULL,
@@ -72,45 +72,48 @@ async function fetchDataAndInsert() {
     try {
       const response = await axios.get(
         `https://financialmodelingprep.com/api/v3/historical-price-full/${symbol}`,
-        {
-          params: {
-            apikey: fmpApiKey,
-          },
-        }
+        { params: { apikey: fmpApiKey } }
       );
 
-      const data = response.data.historical;
-      if (!data) {
+      // Validate response
+      const data = response.data.historical || [];
+      if (!Array.isArray(data) || data.length === 0) {
         console.error(`No historical data found for ${symbol}`);
         continue;
       }
 
-      // Insert historical data into the database
-      for (const record of data) {
-        const { date, open, high, low, close, volume } = record;
+      // Validate and format data
+      const validRecords = data.filter(record => 
+        record.date && record.open !== undefined && record.high !== undefined &&
+        record.low !== undefined && record.close !== undefined && record.volume !== undefined
+      );
 
-        const insertQuery = `
-          INSERT INTO WORLD_COMPANIES (symbol, date, open, high, low, close, volume)
-          VALUES ($1, $2, $3, $4, $5, $6, $7);
-        `;
-
-        await client.query(insertQuery, [
-          symbol,
-          date,
-          parseFloat(open),
-          parseFloat(high),
-          parseFloat(low),
-          parseFloat(close),
-          parseInt(volume)
-        ]);
+      if (validRecords.length === 0) {
+        console.error(`No valid records to insert for ${symbol}`);
+        continue;
       }
 
+      // Prepare batch insert
+      const insertValues = validRecords.map(record => {
+        const { date, open, high, low, close, volume } = record;
+        return `(
+          '${symbol}', '${date}', ${parseFloat(open) || 'NULL'}, 
+          ${parseFloat(high) || 'NULL'}, ${parseFloat(low) || 'NULL'}, 
+          ${parseFloat(close) || 'NULL'}, ${parseInt(volume) || 'NULL'}
+        )`;
+      }).join(', ');
+
+      const insertQuery = `
+        INSERT INTO MarketData (symbol, date, open, high, low, close, volume)
+        VALUES ${insertValues};
+      `;
+
+      await client.query(insertQuery);
       console.log(`Data for ${symbol} inserted successfully`);
     } catch (err) {
-      console.error(`Error fetching or inserting data for ${symbol}:`, err);
+      console.error(`Error fetching or inserting data for ${symbol}:`, err.message);
     }
   }
-
   console.log('All data fetched and inserted. Closing connection.');
   client.end();
 }
