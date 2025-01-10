@@ -1,15 +1,15 @@
-import pkg from 'pg'; // Import the default export from 'pg'
+import pkg from "pg"; // Import the default export from 'pg'
 const { Client } = pkg; // Extract Client from the imported package
 
-import axios from 'axios';
+import axios from "axios";
 
 // PostgreSQL database configuration
 const dbConfig = {
-  host: 'localhost',
-  user: 'postgres',
-  port: 5000,
-  password: 'Aviral@2002', // Replace with your actual password
-  database: 'trade'
+  host: "localhost",
+  user: "postgres",
+  port: 5432,
+  password: "yash2002@annu", // Replace with your actual password
+  database: "stock_trade",
 };
 
 // FMP API Key (Replace with your actual API key from Financial Modeling Prep)
@@ -17,17 +17,107 @@ const fmpApiKey = "HE9g9FrdZnOqaQm0sUJa1vfIf6cnKx8D";
 
 // List of company symbols
 const companySymbols = [
-    "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "BRK.B", "META", "NVDA", "JPM", "JNJ",
-    "V", "PG", "UNH", "HD", "MA", "XOM", "KO", "PFE", "PEP", "CSCO",
-    "MRK", "ABT", "CMCSA", "AVGO", "ADBE", "NFLX", "INTC", "VZ", "DIS", "WMT",
-    "TMO", "NKE", "MCD", "BAC", "CRM", "QCOM", "ACN", "COST", "TXN", "WFC",
-    "T", "LIN", "MDT", "AMGN", "HON", "IBM", "NEE", "C", "BA", "PM",
-    "UNP", "RTX", "SCHW", "LOW", "ORCL", "INTU", "SPGI", "AMAT", "GS", "MS",
-    "BMY", "DE", "PYPL", "CAT", "PLD", "MMM", "MO", "AXP", "DUK", "CL",
-    "CCI", "ADP", "TGT", "CVX", "APD", "PGR", "SO", "COP", "NOW", "FIS",
-    "HUM", "BKNG", "BLK", "ISRG", "ELV", "USB", "EQIX", "LRCX", "REGN", "ZTS",
-    "ADI", "GE", "LMT", "KMB", "NSC", "GD", "ITW", "NOC", "OXY", "ECL"
-  ];
+  "AAPL",
+  "MSFT",
+  "GOOGL",
+  "AMZN",
+  "TSLA",
+  "BRK.B",
+  "META",
+  "NVDA",
+  "JPM",
+  "JNJ",
+  "V",
+  "PG",
+  "UNH",
+  "HD",
+  "MA",
+  "XOM",
+  "KO",
+  "PFE",
+  "PEP",
+  "CSCO",
+  "MRK",
+  "ABT",
+  "CMCSA",
+  "AVGO",
+  "ADBE",
+  "NFLX",
+  "INTC",
+  "VZ",
+  "DIS",
+  "WMT",
+  "TMO",
+  "NKE",
+  "MCD",
+  "BAC",
+  "CRM",
+  "QCOM",
+  "ACN",
+  "COST",
+  "TXN",
+  "WFC",
+  "T",
+  "LIN",
+  "MDT",
+  "AMGN",
+  "HON",
+  "IBM",
+  "NEE",
+  "C",
+  "BA",
+  "PM",
+  "UNP",
+  "RTX",
+  "SCHW",
+  "LOW",
+  "ORCL",
+  "INTU",
+  "SPGI",
+  "AMAT",
+  "GS",
+  "MS",
+  "BMY",
+  "DE",
+  "PYPL",
+  "CAT",
+  "PLD",
+  "MMM",
+  "MO",
+  "AXP",
+  "DUK",
+  "CL",
+  "CCI",
+  "ADP",
+  "TGT",
+  "CVX",
+  "APD",
+  "PGR",
+  "SO",
+  "COP",
+  "NOW",
+  "FIS",
+  "HUM",
+  "BKNG",
+  "BLK",
+  "ISRG",
+  "ELV",
+  "USB",
+  "EQIX",
+  "LRCX",
+  "REGN",
+  "ZTS",
+  "ADI",
+  "GE",
+  "LMT",
+  "KMB",
+  "NSC",
+  "GD",
+  "ITW",
+  "NOC",
+  "OXY",
+  "ECL",
+];
 
 // Create a new instance of the Client
 const client = new Client(dbConfig);
@@ -35,14 +125,14 @@ const client = new Client(dbConfig);
 // Connect to PostgreSQL
 client.connect((err) => {
   if (err) {
-    console.error('Error connecting to PostgreSQL:', err);
+    console.error("Error connecting to PostgreSQL:", err);
     process.exit(1);
   }
-  console.log('Connected to PostgreSQL');
+  console.log("Connected to PostgreSQL");
 
   // Create the WORLD_COMPANIES table
   const createTableQuery = `
-    CREATE TABLE IF NOT EXISTS MarketData (
+    CREATE TABLE IF NOT EXISTS market_data (
       id SERIAL PRIMARY KEY,
       symbol VARCHAR(10) NOT NULL,
       date DATE NOT NULL,
@@ -56,10 +146,10 @@ client.connect((err) => {
 
   client.query(createTableQuery, (err) => {
     if (err) {
-      console.error('Error creating table:', err);
+      console.error("Error creating table:", err);
       process.exit(1);
     }
-    console.log('Table created');
+    console.log("Table created");
 
     // Fetch and insert data
     fetchDataAndInsert();
@@ -83,9 +173,14 @@ async function fetchDataAndInsert() {
       }
 
       // Validate and format data
-      const validRecords = data.filter(record => 
-        record.date && record.open !== undefined && record.high !== undefined &&
-        record.low !== undefined && record.close !== undefined && record.volume !== undefined
+      const validRecords = data.filter(
+        (record) =>
+          record.date &&
+          record.open !== undefined &&
+          record.high !== undefined &&
+          record.low !== undefined &&
+          record.close !== undefined &&
+          record.volume !== undefined
       );
 
       if (validRecords.length === 0) {
@@ -94,26 +189,31 @@ async function fetchDataAndInsert() {
       }
 
       // Prepare batch insert
-      const insertValues = validRecords.map(record => {
-        const { date, open, high, low, close, volume } = record;
-        return `(
-          '${symbol}', '${date}', ${parseFloat(open) || 'NULL'}, 
-          ${parseFloat(high) || 'NULL'}, ${parseFloat(low) || 'NULL'}, 
-          ${parseFloat(close) || 'NULL'}, ${parseInt(volume) || 'NULL'}
+      const insertValues = validRecords
+        .map((record) => {
+          const { date, open, high, low, close, volume } = record;
+          return `(
+          '${symbol}', '${date}', ${parseFloat(open) || "NULL"}, 
+          ${parseFloat(high) || "NULL"}, ${parseFloat(low) || "NULL"}, 
+          ${parseFloat(close) || "NULL"}, ${parseInt(volume) || "NULL"}
         )`;
-      }).join(', ');
+        })
+        .join(", ");
 
       const insertQuery = `
-        INSERT INTO MarketData (symbol, date, open, high, low, close, volume)
+        INSERT INTO market_data (symbol, date, open, high, low, close, volume)
         VALUES ${insertValues};
       `;
 
       await client.query(insertQuery);
       console.log(`Data for ${symbol} inserted successfully`);
     } catch (err) {
-      console.error(`Error fetching or inserting data for ${symbol}:`, err.message);
+      console.error(
+        `Error fetching or inserting data for ${symbol}:`,
+        err.message
+      );
     }
   }
-  console.log('All data fetched and inserted. Closing connection.');
+  console.log("All data fetched and inserted. Closing connection.");
   client.end();
 }
