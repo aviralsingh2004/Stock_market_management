@@ -3,8 +3,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import puppeteer from "puppeteer";
 import Groq from "groq-sdk";
+import dotenv from 'dotenv';
 import readline from "readline/promises"; // Use the promises API
-import { stdin as input, stdout as output } from "process";
 import fs from "fs";
 import pkg from "pg"; // Import the entire 'pg' package
 const { Client } = pkg; // Destructure the 'Client' class from the package
@@ -12,14 +12,13 @@ import bcrypt from "bcrypt";
 import cors from "cors";
 import { error } from "console";
 import { stringify } from "querystring";
-
+dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const port = 4000;
-
 const app = express();
-const API_KEY = "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";
+const API_KEY = process.env.GROQ_API_KEY;
 // API middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -37,9 +36,9 @@ app.use(
 const con = new Client({
   host: "localhost",
   user: "postgres",
-  port: 5000,
-  password: "Aviral@2002", // Replace with your actual password
-  database: "trade",
+  port: process.env.DB_PORT,
+  password: process.env.PASSWORD, // Replace with your actual password
+  database: process.env.DATABASE,
 });
 
 // Connect to the database
@@ -76,8 +75,8 @@ const groq = new Groq({
 // app.get('/signup', (req, res) => {
 //     res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 // });
-let emailid = "instagram9415@gmail.com";
-let user_id;
+let emailid=process.env.EMAILID;
+let user_id=process.env.USER_ID;
 
 app.post("/formPost", async (req, res) => {
   try {
@@ -218,6 +217,7 @@ app.post("/api/user/total_balance", async (req, res) => {
       return res.status(400).json({ error: "Invalid amount" });
     }
     let query = "SELECT total_balance FROM Users WHERE email = $1";
+    console.log(email);
     const result = await con.query(query, [email]);
     if (result.rows.length == 0) {
       return res.status(404).json({ error: "User not found" });
@@ -248,7 +248,7 @@ app.post("/api/user/total_balance", async (req, res) => {
     const transaction_date = new Date().toLocaleDateString();
     await con.query(query, [
       user_id,
-      0,
+      null,
       transaction_type,
       0,
       val,
@@ -263,7 +263,7 @@ app.post("/api/user/total_balance", async (req, res) => {
   }
 });
 
-//THIS IS FOR TRANSACTION
+//THIS IS FOR TRADE
 app.post("/api/user/trade", (req, res) => {
   return res.status(200).json({ msg: "working fine" });
 });
