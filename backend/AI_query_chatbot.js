@@ -5,7 +5,7 @@ import pkg from 'pg'; // Import the entire 'pg' package
 const { Client } = pkg;
 import { stringify } from 'querystring';
 // Directly insert your Groq API key
-const API_KEY = "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"; // Replace with your actual Groq API key
+const API_KEY = ""; // Replace with your actual Groq API key
 
 if (!API_KEY) {
   console.error("Error: Groq API key is not defined.");
