@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SparklesCore } from "../Components/ui/sparkles";
+import { SparklesCore } from "D:/Web Development/DBMS/stock-visualizer/dbms-project/src/Components/ui/sparkles.jsx";
 import Navbar from "../Components/Navbar/Navbar";
 
 const Trade = () => {

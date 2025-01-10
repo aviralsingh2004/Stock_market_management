@@ -37,9 +37,9 @@ app.use(
 const con = new Client({
   host: "localhost",
   user: "postgres",
-  port: 5432,
-  password: "yash2002@annu", // Replace with your actual password
-  database: "stock_trade",
+  port: 5000,
+  password: "Aviral@2002", // Replace with your actual password
+  database: "trade",
 });
 
 // Connect to the database
@@ -501,8 +501,6 @@ app.get("/api/real-time-data/:symbol", async (req, res) => {
 });
 // this is the endpoint for particular company searched using symbol
 // Function to get all table names from the database
-// Function to get all table names from the database
-// Function to get all table names from the database
 const getAllTables = async () => {
   const query = `
         SELECT table_name 
@@ -523,21 +521,19 @@ const getTableStructures = async () => {
   const dbStructure = {};
   try {
     const query = `
-            SELECT 
-                table_name,
-                column_name,
-                data_type
-            FROM 
-                information_schema.columns
-            WHERE 
-                table_schema = 'public'
-            ORDER BY 
-                table_name, ordinal_position;
-        `;
+      SELECT 
+        table_name,
+        column_name,
+        data_type
+      FROM 
+        information_schema.columns
+      WHERE 
+        table_schema = 'public'
+      ORDER BY 
+        table_name, ordinal_position;
+    `;
 
     const result = await con.query(query);
-
-    // Organize results by table
     result.rows.forEach((row) => {
       if (!dbStructure[row.table_name]) {
         dbStructure[row.table_name] = [];
@@ -555,9 +551,8 @@ const getTableStructures = async () => {
   }
 };
 
-// Function to generate SQL query based on prompt and schema
-const generateSQLQuery = async (prompt, dbStructure) => {
-  // Create a detailed schema description for the AI
+// Function to let the agent decide which table to use
+const determineRelevantTable = async (prompt, dbStructure) => {
   const schemaDescription = Object.entries(dbStructure)
     .map(([tableName, columns]) => {
       const columnDesc = columns
@@ -571,9 +566,58 @@ const generateSQLQuery = async (prompt, dbStructure) => {
     messages: [
       {
         role: "system",
-        content: `You are an SQL expert who can only READ the database ,do not generate any queries  INSERT, UPDATE, DELETE or other modification queries otherwise  You have access to the following database schema:\n${schemaDescription}\n
+        content: `You are a database expert. Given a user's question and database schema, return only the single most relevant table name that would be needed to answer the question. Return just the table name as a string without any additional text or formatting.`,
+      },
+      {
+        role: "user",
+        content: `Schema:\n${schemaDescription}\n\nQuestion: ${prompt}\n\nReturn only the most relevant table name.`,
+      },
+    ],
+    model: "llama3-70b-8192",
+    temperature: 0.1,
+    max_tokens: 50,
+  });
+
+  return completion.choices[0]?.message?.content.trim();
+};
+
+// Function to extract all content from the selected table
+const extractTableContent = async (tableName) => {
+  try {
+    // Get all data from the table
+    const query = `SELECT * FROM ${tableName};`;
+    const result = await con.query(query);
+    
+    // Convert the table content to a formatted string
+    const contentString = result.rows
+      .map(row => JSON.stringify(row))
+      .join('\n');
+    
+    return {
+      data: result.rows,
+      contentString: contentString
+    };
+  } catch (error) {
+    console.error(`Error extracting content from ${tableName}:`, error);
+    throw error;
+  }
+};
+
+// Function to generate SQL query with table content context
+const generateSQLQuery = async (prompt, dbStructure, tableName, tableContent) => {
+  // Create context with schema and table content
+  const tableSchema = dbStructure[tableName];
+  const schemaContext = `Table ${tableName}:\nColumns: ${tableSchema
+    .map((col) => `${col.column}: ${col.type}`)
+    .join(", ")}\n\nTable content sample:\n${tableContent.contentString.slice(0, 1000)}...`; // Limiting content sample to avoid token limits
+
+  const completion = await groq.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content: `You are an SQL expert who can only READ the database. Do not generate any queries related to INSERT, UPDATE, DELETE or other modification queries. You have access to the following database context:\n${schemaContext}\n
                 Return only the SQL query without any explanation.
-                Generate a SQL query that answers the user's question. Use appropriate JOINs and WHERE if needed.`,
+                Generate a SQL query that answers the user's question using the provided table.`,
       },
       {
         role: "user",
@@ -583,36 +627,31 @@ const generateSQLQuery = async (prompt, dbStructure) => {
     model: "llama3-70b-8192",
     temperature: 0.2,
     max_tokens: 512,
-    top_p: 1,
-    stream: false,
   });
 
   return completion.choices[0]?.message?.content.trim();
 };
 
-// Function to interpret query results based on prompt
-const interpretResults = async (prompt, queryResults, query) => {
+// Function to interpret query results
+const interpretResults = async (prompt, queryResults, query, tableName, tableContent) => {
   const completion = await groq.chat.completions.create({
     messages: [
       {
         role: "system",
-        content: `You are an expert at interpreting database results and answering questions. 
-                         Given a query and its results, provide a clear answer to the user's question.
-                         Focus on answering the specific question asked in the prompt.`,
+        content: `You are an expert at interpreting database results. Provide a clear, natural language answer to the user's question. Include relevant context from the data but be concise.`,
       },
       {
         role: "user",
         content: `Original question: ${prompt}\n
-                         Query executed: ${query}\n
-                         Results: ${JSON.stringify(queryResults)}\n
-                         Please answer the original question based on these results.`,
+                 Query executed: ${query}\n
+                 Table used: ${tableName}\n
+                 Results: ${JSON.stringify(queryResults)}\n
+                 Please provide a clear answer to the original question based on these results.`,
       },
     ],
     model: "llama3-70b-8192",
     temperature: 0.3,
     max_tokens: 150,
-    top_p: 1,
-    stream: false,
   });
 
   return completion.choices[0]?.message?.content;
@@ -626,29 +665,37 @@ app.post("/api/processPrompt", async (req, res) => {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    // Step 1: Get database schema (can be cached for better performance)
+    // Step 1: Get database schema
     const dbStructure = await getTableStructures();
-    // console.log("Database Structure:", dbStructure);
-
-    // Step 2: Generate SQL query based on schema and prompt
-    const sqlQuery = await generateSQLQuery(prompt, dbStructure);
+    
+    // Step 2: Determine the relevant table
+    const relevantTable = await determineRelevantTable(prompt, dbStructure);
+    
+    // Step 3: Extract content from the relevant table
+    const tableContent = await extractTableContent(relevantTable);
+    
+    // Step 4: Generate SQL query with context
+    const sqlQuery = await generateSQLQuery(prompt, dbStructure, relevantTable, tableContent);
     console.log("Generated SQL Query:", sqlQuery);
-    const sqlquerytrim = sqlQuery.replace(/^```|```$/g, "").trim();
-    // Step 3: Execute the query
-    const queryResult = await con.query(sqlquerytrim);
-    console.log("Query Results:", queryResult.rows);
-
-    // Step 4: Interpret results in context of the original prompt
+    
+    // Step 5: Execute the query
+    const sqlQueryTrim = sqlQuery.replace(/^```|```$/g, "").trim();
+    const queryResult = await con.query(sqlQueryTrim);
+    
+    // Step 6: Interpret results with full context
     const interpretation = await interpretResults(
       prompt,
       queryResult.rows,
-      sqlQuery
+      sqlQuery,
+      relevantTable,
+      tableContent
     );
 
     // Send response
     res.json({
       response: interpretation,
       query: sqlQuery,
+      relevantTable: relevantTable,
       rawResults: queryResult.rows,
     });
   } catch (err) {

@@ -2,8 +2,8 @@
 import React, { useId, useEffect, useState } from "react";
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
-//import { cn } from "D:/Web Development/DBMS/stock-visualizer/dbms-project/src/lib/utils.ts";
-import { cn } from "C:/Users/insta/OneDrive/Desktop/stock_new/Stock_market_management/src/lib/utils.ts";
+import { cn } from "D:/Web Development/DBMS/stock-visualizer/dbms-project/src/lib/utils.ts";
+// import { cn } from "C:/Users/insta/OneDrive/Desktop/stock_new/Stock_market_management/src/lib/utils.ts";
 import { motion, useAnimation } from "framer-motion";
 
 export const SparklesCore = (props) => {
