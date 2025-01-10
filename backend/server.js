@@ -38,8 +38,8 @@ const con = new Client({
   host: "localhost",
   user: "postgres",
   port: 5432,
-  password: "yash2002@annu", // Replace with your actual password
-  database: "stock_trade",
+  password: " ", // Replace with your actual password
+  database: " ",//replace with your database name
 });
 
 // Connect to the database
