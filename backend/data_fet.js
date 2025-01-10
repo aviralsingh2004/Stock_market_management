@@ -8,12 +8,12 @@ const dbConfig = {
   host: "localhost",
   user: "postgres",
   port: 5432,
-  password: "yash2002@annu", // Replace with your actual password
-  database: "stock_trade",
+  password: " ", // Replace with your actual password
+  database: " ",
 };
 
 // FMP API Key (Replace with your actual API key from Financial Modeling Prep)
-const fmpApiKey = "HE9g9FrdZnOqaQm0sUJa1vfIf6cnKx8D";
+const fmpApiKey = " ";
 
 // List of company symbols
 const companySymbols = [
