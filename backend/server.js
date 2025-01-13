@@ -245,7 +245,7 @@ app.post("/api/user/total_balance", async (req, res) => {
     `;
     const transaction_type = operation === "add" ? "deposited" : "withdrawn";
 
-    const transaction_date = new Date().toLocaleDateString();
+    const transaction_date = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await con.query(query, [
       user_id,
       null,
@@ -265,13 +265,11 @@ app.post("/api/user/total_balance", async (req, res) => {
 
 //THIS IS FOR TRADE
 app.post("/api/user/trade", (req, res) => {
-  return res.status(200).json({ msg: "working fine" });
+
+//   return res.status(200).json({ msg: "working fine" });
 });
 
 // val this new endpoint for fetching real time company data
-function getRandomShares(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
 async function scrapeAndStoreStockData() {
   // List of stock symbols you want to scrape
   const stockSymbols = {
@@ -408,35 +406,49 @@ async function scrapeAndStoreStockData() {
 
   await browser.close();
 
-  // const client = new Client(dbConfig);
-  // await client.connect();
+  const client = new Client(dbConfig);
+  await client.connect();
 
   try {
     for (const stock of stockData) {
       const company_name = stock.name;
       const ticker_symbol = stock.symbol;
       let stock_price = parseFloat(stock.price);
-      const total_shares = getRandomShares(1000, 10000);
+      // const total_shares = getRandomShares(1000, 10000);
 
-      const query = `
-          INSERT INTO Companies (company_name, ticker_symbol, stock_price, total_shares)
-          VALUES ($1, $2, $3, $4)
-          ON CONFLICT (ticker_symbol) 
-          DO UPDATE SET stock_price = EXCLUDED.stock_price, total_shares = EXCLUDED.total_shares;
-        `;
+    const query = `
+  WITH existing_shares AS (
+    SELECT total_shares 
+    FROM Companies 
+    WHERE ticker_symbol = $2
+  )
+  INSERT INTO Companies (company_name, ticker_symbol, stock_price, total_shares)
+  VALUES (
+    $1, 
+    $2, 
+    $3, 
+    COALESCE((SELECT total_shares FROM existing_shares), $4)
+  )
+  ON CONFLICT (ticker_symbol) 
+  DO UPDATE SET 
+    company_name = EXCLUDED.company_name,
+    stock_price = EXCLUDED.stock_price;
+`;
 
-      await con.query(query, [
-        company_name,
-        ticker_symbol,
-        stock_price,
-        total_shares,
-      ]);
+      const defaultTotalShares = 5000; // or whatever default value you want for new companies
+
+await client.query(query, [
+  company_name,
+  ticker_symbol,
+  stock_price,
+  defaultTotalShares  // This will only be used for new insertions, not updates
+]);
       console.log(`Inserted/Updated ${company_name} (${ticker_symbol})`);
     }
   } catch (error) {
     console.error("Database operation failed:", error.message);
   } finally {
-    await con.end();
+    await client.end();
     console.log("Database connection closed.");
   }
 }
@@ -479,12 +491,162 @@ app.get("/api/companies", async (req, res) => {
     res.status(500).json({ error: "Error fetching company data" });
   }
 });
+// api endpoint for extracting real-time-data for all companies for trade page
+app.get("/api/all_companies", async (req, res) => {
+  try {
+    const query = `
+            SELECT *  
+            FROM companies
+            ORDER BY company_name
+        `;
 
+    const result = await con.query(query);
+    console.log("Companies data fetched:", result.rows.length, "records");
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error fetching companies:", err);
+    res.status(500).json({ error: "Error fetching company data" });
+  }
+});
+// this api endpoint is used for buying and selling stocks
+app.post("/api/trade", async(req,res) => {
+  try{
+    const {company_name,quantity1,operation} = req.body;
+    // console.log("reacher_here");
+    console.log(user_id);
+    // console.log(quantity1);
+    const quantity= parseInt(quantity1);
+    // Query for user's balance
+    const getUserBalance = `
+      SELECT total_balance 
+      FROM users
+      WHERE user_id = $1;
+    `;
+
+// Query for company details
+    const getCompanyDetails = `
+      SELECT company_id, ticker_symbol, stock_price, total_shares
+      FROM companies
+      WHERE company_name = $1;
+    `;
+
+// Execute the queries
+    const userBalance = await con.query(getUserBalance, [user_id]);
+    const companyDetails = await con.query(getCompanyDetails, [company_name]);
+    const stock_price = parseFloat(companyDetails.rows[0].stock_price);
+    const ticker_symbol = companyDetails.rows[0].ticker_symbol;
+    let total_shares = parseInt(companyDetails.rows[0].total_shares);
+    const company_id = companyDetails.rows[0].company_id;
+    let userTotalBalance = parseFloat(userBalance.rows[0].total_balance);
+    // aukat pata karni hai 
+    if(operation==="Buy_stock"){
+      // console.log(quantity);
+      if(((quantity*stock_price)  <= userTotalBalance) && total_shares >= quantity){
+        total_shares = total_shares - quantity;
+        userTotalBalance = userTotalBalance - (quantity*stock_price);
+        const updateUserBalance =`
+        UPDATE users
+        SET total_balance = $1
+        WHERE user_id = $2
+        `;
+        await con.query(updateUserBalance,[userTotalBalance,user_id]);
+        const updateCompanyShare=`
+        UPDATE companies
+        SET total_shares = $1
+        WHERE company_id = $2
+        `;
+        await con.query(updateCompanyShare,[total_shares,company_id]);
+        //to update the transaction table
+        const transactionQuery=`
+        INSERT INTO transactions (user_id,company_id,transaction_type,quantity,total_amount,transaction_date)
+        VALUES($1, $2, $3, $4,$5,$6)
+        `;
+        
+        const values = [
+          user_id,
+          company_id,
+          operation,
+          quantity,
+          quantity*stock_price,
+          new Date().toISOString().slice(0, 19).replace('T', ' ')
+        ];
+        console.log(new Date().toISOString().slice(0, 19).replace('T', ' '));
+        await con.query(transactionQuery,values);
+        // console.log(resolt);
+        const stock_query = `
+        INSERT INTO stocks (user_id, company_id, quantity, company_name, average_price)
+        VALUES ($1, $2, $3, $4, $5)
+        ON CONFLICT (user_id, company_id)
+        DO UPDATE
+        SET 
+        quantity = stocks.quantity + $3,
+        average_price = ((stocks.average_price * stocks.quantity) + ($3 *   $5)) / (stocks.quantity + $3);
+        `;
+        await con.query(stock_query, [user_id, company_id, quantity, company_name, stock_price]);
+        res.json(userTotalBalance);
+      }else{
+        console.log("Insufficient balance");
+        res.status(404).json({error:"Insufficient balance to carry transaction"});
+      }
+    }else if(operation==="Sell_stock"){
+      const getTotalStockofUser = 
+      ` SELECT quantity
+      FROM stocks
+      WHERE user_id = $1 AND company_name = $2
+      `;
+      const resTotalStockofUser = await con.query(getTotalStockofUser,[user_id,company_name]);
+      let totalStockofUser = parseInt(resTotalStockofUser.rows[0].quantity);
+      if(totalStockofUser >= quantity) {
+        const reducestockquery= `
+        UPDATE stocks
+        SET quantity = $1
+        WHERE user_id= $2 AND company_name = $3
+        `;
+        // console.log((totalStockofUser-quantity));
+        await con.query(reducestockquery,[(totalStockofUser-quantity),user_id,company_name]);
+        userTotalBalance=userTotalBalance + quantity*stock_price;
+         const updateUserBalance =`
+        UPDATE users
+        SET total_balance = $1
+        WHERE user_id = $2
+        `;
+        await con.query(updateUserBalance,[(userTotalBalance),user_id]);
+        const updateCompanyShare=`
+        UPDATE companies
+        SET total_shares = $1
+        WHERE company_id = $2
+        `;
+        await con.query(updateCompanyShare,[total_shares+quantity,company_id]);
+        //to update the transaction table
+        const transactionQuery=`
+        INSERT INTO Transactions (user_id,company_id,transaction_type,quantity,total_amount,transaction_date)
+        VALUES($1, $2, $3, $4,$5,$6)
+        `;
+        
+        const values = [
+          user_id,
+          company_id,
+          operation,
+          quantity,
+          quantity*stock_price,
+          new Date().toISOString().slice(0, 19).replace('T', ' ')
+        ];
+        await con.query(transactionQuery,values);
+        console.log(userTotalBalance);
+        res.json(userTotalBalance);
+      }else{
+        res.status(404).json({error:"Insufficient Stocks. Please verify"});
+      }
+    }
+  }catch(err){
+    res.status(400).json({error:"Error in fetching the total balance of the user"});
+  }
+});
 app.get("/api/real-time-data/:symbol", async (req, res) => {
   try {
     const { symbol } = req.params;
     const query = `
-            SELECT stock_price FROM Companies WHERE ticker_symbol = $1
+            SELECT company_id,stock_price,total_shares FROM Companies WHERE ticker_symbol = $1
         `;
     const result = await con.query(query, [symbol]);
     console.log(
@@ -492,8 +654,10 @@ app.get("/api/real-time-data/:symbol", async (req, res) => {
       result.rows.length,
       "records"
     );
-    const result1 = stringify(result.rows[0]);
-    res.json(result1);
+    const company_id =parseInt(result.rows[0].company_id);
+    const stock_price=parseInt(result.rows[0].stock_price);
+    const total_shares=parseInt(result.rows[0].total_shares);
+    res.json({ company_id:company_id, stock_price:stock_price, total_shares:total_shares });
   } catch (err) {
     console.error("Error fetching real-time data:", err);
     res.status(500).json({ error: "Error fetching real-time data" });

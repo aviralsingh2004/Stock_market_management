@@ -7,16 +7,16 @@ import puppeteer from "puppeteer";
 const dbConfig = {
   host: "localhost",
   user: "postgres",
-  port: 5432,
-  password: "yash2002@annu", // Replace with your actual password
-  database: "stock_trade",
+  port: 5000,
+  password: "Aviral@2002", // Replace with your actual password
+  database: "trade",
 };
 
 // Function to get random number for total shares
 // Utility function to generate random shares
-function getRandomShares(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
+// function getRandomShares(min, max) {
+//   return Math.floor(Math.random() * (max - min + 1) + min);
+// }
 
 // Named function for scraping and storing stock data
 async function scrapeAndStoreStockData() {
@@ -163,21 +163,35 @@ async function scrapeAndStoreStockData() {
       const company_name = stock.name;
       const ticker_symbol = stock.symbol;
       let stock_price = parseFloat(stock.price);
-      const total_shares = getRandomShares(1000, 10000);
+      // const total_shares = getRandomShares(1000, 10000);
 
-      const query = `
-        INSERT INTO Companies (company_name, ticker_symbol, stock_price, total_shares)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (ticker_symbol) 
-        DO UPDATE SET stock_price = EXCLUDED.stock_price, total_shares = EXCLUDED.total_shares;
-      `;
+    const query = `
+  WITH existing_shares AS (
+    SELECT total_shares 
+    FROM Companies 
+    WHERE ticker_symbol = $2
+  )
+  INSERT INTO Companies (company_name, ticker_symbol, stock_price, total_shares)
+  VALUES (
+    $1, 
+    $2, 
+    $3, 
+    COALESCE((SELECT total_shares FROM existing_shares), $4)
+  )
+  ON CONFLICT (ticker_symbol) 
+  DO UPDATE SET 
+    company_name = EXCLUDED.company_name,
+    stock_price = EXCLUDED.stock_price;
+`;
 
-      await client.query(query, [
-        company_name,
-        ticker_symbol,
-        stock_price,
-        total_shares,
-      ]);
+      const defaultTotalShares = 5000; // or whatever default value you want for new companies
+
+await client.query(query, [
+  company_name,
+  ticker_symbol,
+  stock_price,
+  defaultTotalShares  // This will only be used for new insertions, not updates
+]);
       console.log(`Inserted/Updated ${company_name} (${ticker_symbol})`);
     }
   } catch (error) {

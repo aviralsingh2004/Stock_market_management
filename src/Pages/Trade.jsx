@@ -1,18 +1,60 @@
-import React, { useState } from "react";
+import React, { useState ,useEffect} from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { typographyClasses } from "@mui/material";
 
 const Trade = () => {
   const [search, setSearch] = useState("");
-
-  const handleSearch = () => {
-    console.log("Searching for stock:", search);
+  const [companies,setCompanies] = useState([]);
+  const [error, setError] = useState(null);
+  const [searchterm,setSearchTerm] = useState('');
+  useEffect(()=>{
+    fetchCompanies();
+  },[]);
+  const fetchCompanies = async () => {
+    try{
+      const response = await fetch('http://localhost:4000/api/all_companies');
+      if(!response.ok){
+        throw new Error('Failed to fetch data');
+      }
+      const data = await response.json();
+      setCompanies(data);
+    }catch (err) {
+      console.error('Error fetching all company data:',err);
+      setError('Failed to load company data');
+      // setLoading(false);
+    }
+  };
+  const fetchparticularcompany = async (company_name,quantity1,operation) => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/trade`,{
+        method:"POST",
+        headers: {
+          "Content-type":"application/json",
+        },
+        body: JSON.stringify({company_name,quantity1,operation}),
+      });
+      if(!response.ok){
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      
+    } catch (error) {
+      console.error("Error:",error);
+      return "There is an error while performing trade operation.";
+    }
+  };
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+    if(e.target.value.trim() !== ''){
+      
+    }
   };
 
   return (
-    <div>
+    <div className = "bg-black">
       <Navbar />
       <div className="flex items-center justify-center mt-8">
-        <div className="grid grid-cols-12 gap-2 items-center">
+        <div className="stock-container grid grid-cols-12 gap-2 items-center">
           <label htmlFor="stock-search" className="sr-only">
             Search the stock
           </label>
