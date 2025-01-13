@@ -513,7 +513,7 @@ app.post("/api/trade", async(req,res) => {
   try{
     const {company_name,quantity1,operation} = req.body;
     // console.log("reacher_here");
-    console.log(user_id);
+    console.log(operation, company_name, quantity1);
     // console.log(quantity1);
     const quantity= parseInt(quantity1);
     // Query for user's balance
@@ -583,6 +583,7 @@ app.post("/api/trade", async(req,res) => {
         average_price = ((stocks.average_price * stocks.quantity) + ($3 *   $5)) / (stocks.quantity + $3);
         `;
         await con.query(stock_query, [user_id, company_id, quantity, company_name, stock_price]);
+        console.log(userTotalBalance);
         res.json(userTotalBalance);
       }else{
         console.log("Insufficient balance");
