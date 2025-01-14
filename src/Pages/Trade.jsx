@@ -9,12 +9,14 @@ const Trade = () => {
   const [operation, setOperation] = useState("Buy_stock");
   const [error, setError] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
+  const [success , setSuccess] = useState("");
+  const [loading, setLoading]  = useState("Loading...");
   // const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [news, setNews] = useState([]);
 
   useEffect(() => {
     fetchCompanies();
-    // fetchNews();
+    fetchNews();
   }, []);
 
   // Filter companies based on search input
@@ -29,6 +31,7 @@ const Trade = () => {
         throw new Error('Failed to fetch data');
       }
       const data = await response.json();
+      setLoading(null);
       setCompanies(data);
     } catch (err) {
       console.error('Error fetching all company data:', err);
@@ -36,16 +39,18 @@ const Trade = () => {
     }
   };
 
-  // const fetchNews = async () => {
-  //   try {
-  //     const response = await fetch('http://localhost:4000/api/news');
-  //     if (!response.ok) throw new Error('Failed to fetch news');
-  //     const data = await response.json();
-  //     setNews(data);
-  //   } catch (err) {
-  //     console.error('Error fetching news:', err);
-  //   }
-  // };
+  const fetchNews = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/current_news');
+      if (!response.ok) throw new Error('Failed to fetch news');
+      const data = await response.json();
+      // console.log(data);
+
+      setNews(data);
+    } catch (err) {
+      console.error('Error fetching news:', err);
+    }
+  };
 
   const fetchparticularcompany = async (company_name, quantity1, operation) => {
     try {
@@ -97,18 +102,37 @@ const Trade = () => {
       <Navbar />
       <div className="justify-center item-center max-h-screen mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - News */}
-          <div className="lg:col-span-3 bg-gray-900 rounded-lg p-4 h-[calc(100vh-200px)] overflow-y-auto">
-            <h2 className="text-xl font-bold mb-4">Market News</h2>
-            <div className="space-y-4">
-              {news.map((item, index) => (
-                <div key={index} className="border-b border-gray-700 pb-4">
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-sm text-gray-400">{item.description}</p>
-                </div>
-              ))}
+            {/* Left Sidebar - Market News */}
+            <div className="lg:col-span-3 bg-gray-900 rounded-lg p-6 h-[calc(100vh-200px)] overflow-y-auto shadow-lg scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+              <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+                Market News
+              </h2>
+              <div className="space-y-4">
+                {loading === null ? (
+                  <ul className="space-y-3">
+                    {news.map((article, index) => (
+                      <li
+                        key={index}
+                        className="group bg-gray-800 hover:bg-gray-700 rounded-lg p-4 transition-colors duration-200"
+                      >
+                        <a
+                          href={article.hyperlink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 group-hover:text-blue-300 font-medium transition-colors duration-200"
+                        >
+                          {article.headline}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-center text-gray-400">
+                    {loading}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
           {/* Middle Section - Trade Form */}
           <div className="lg:col-span-5 bg-gray-900 rounded-lg p-6">
@@ -125,7 +149,7 @@ const Trade = () => {
                 {/* Search Suggestions */}
                 
               </div>
-                    {/* <div className="text-center">{selectedCompany}</div> */}
+                    <div className="text-center">{selectedCompany}</div>
               {/* Trade Options */}
               <div className="grid grid-cols-2 gap-4">
                 <div>

@@ -582,6 +582,7 @@ app.post("/api/trade", async(req,res) => {
         quantity = stocks.quantity + $3,
         average_price = ((stocks.average_price * stocks.quantity) + ($3 *   $5)) / (stocks.quantity + $3);
         `;
+        console.log(user_id);
         await con.query(stock_query, [user_id, company_id, quantity, company_name, stock_price]);
         console.log(userTotalBalance);
         res.json(userTotalBalance);
@@ -643,6 +644,57 @@ app.post("/api/trade", async(req,res) => {
     res.status(400).json({error:"Error in fetching the total balance of the user"});
   }
 });
+//function to extract real-time-news
+const scrapeNews = async () => {
+  const url = 'https://www.google.com/finance/?hl=en';
+
+  // Launch Puppeteer
+  const browser = await puppeteer.launch();
+  const page = await browser.newPage();
+
+  try {
+    // Navigate to the URL
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    // Scrape news headlines and hyperlinks
+    const newsData = await page.evaluate(() => {
+      const newsItems = [];
+      const elements = document.querySelectorAll('.Yfwt5'); // Adjust selector if necessary
+
+      elements.forEach((element) => {
+        const headline = element.textContent.trim();
+        console.log(headline);
+        const linkElement = element.closest('a'); // Get closest parent `<a>` tag
+        const hyperlink = linkElement ? linkElement.href : null;
+
+        if (headline && hyperlink) {
+          newsItems.push({ headline, hyperlink });
+        }
+      });
+
+      return newsItems;
+    });
+    
+    // Display the extracted data in JSON format on the console
+    return newsData;
+  } catch (error) {
+    console.error('Error scraping the data:', error);
+  } finally {
+    // Close the browser
+    await browser.close();
+  }
+};
+//api for current news
+app.get("/api/current_news",async (req,res) => {
+  try{
+    const news = await scrapeNews();
+    console.log("news extracted successfully");
+    res.json(news);
+  }catch(err){
+    console.error("Error fetching in real time news:",err);
+    res.status(500).json({error:"Error fetching in real time news" });
+  }
+})
 app.get("/api/real-time-data/:symbol", async (req, res) => {
   try {
     const { symbol } = req.params;
@@ -731,7 +783,7 @@ const determineRelevantTable = async (prompt, dbStructure) => {
     messages: [
       {
         role: "system",
-        content: `You are a database expert. Given a user's question and database schema, return only the single most relevant table name that would be needed to answer the question. Return just the table name as a string without any additional text or formatting.`,
+        content: `You are a database expert. Given a user whose user_id is ${user_id} and user's question and database schema, return only the single most relevant table name that would be needed to answer the question. Return just the table name as a string without any additional text or formatting.`,
       },
       {
         role: "user",
@@ -780,9 +832,11 @@ const generateSQLQuery = async (prompt, dbStructure, tableName, tableContent) =>
     messages: [
       {
         role: "system",
-        content: `You are an SQL expert who can only READ the database. Do not generate any queries related to INSERT, UPDATE, DELETE or other modification queries. You have access to the following database context:\n${schemaContext}\n
-                Return only the SQL query without any explanation.
-                Generate a SQL query that answers the user's question using the provided table.`,
+        content: `
+       You are an SQL expert who can only READ the database. Do not generate any queries related to INSERT, UPDATE, DELETE or other modification queries. You have access to the following database context:\n${schemaContext}\n and user_id is ${user_id} and emailid is ${emailid}.
+        Do not entertain queries that request information about other users.
+        Return only the SQL query without any explanation.
+        Generate a SQL query that answers the user's question using the provided table.`,
       },
       {
         role: "user",
