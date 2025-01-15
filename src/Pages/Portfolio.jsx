@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { SparklesCore } from "D:/Web Development/DBMS/stock-visualizer/dbms-project/src/Components/ui/sparkles.jsx";
+//import { SparklesCore } from "D:/Web Development/DBMS/stock-visualizer/dbms-project/src/Components/ui/sparkles.jsx";
 import Navbar from "../Components/Navbar/Navbar";
-
+import { SparklesCore } from "../Components/ui/sparkles";
 const Trade = () => {
   const [add, setAdd] = useState("");
   const [withdraw, setWithdraw] = useState("");

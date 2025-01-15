@@ -96,7 +96,7 @@ export const Funds = () => {
     <div>
       <Navbar />
       <div className="flex items-center justify-center min-h-screen">
-        <div className="w-full mx-auto p-6 bg-gray-800 rounded-xl shadow-lg space-y-6">
+        <div className="w-full mx-auto p-6 bg-gray-900 rounded-xl shadow-lg space-y-6">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">
             Wallet
           </h2>

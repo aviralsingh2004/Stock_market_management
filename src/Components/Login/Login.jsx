@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { SparklesCore } from '../ui/sparkles'; // Make sure this component is defined and loaded.
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export const Login = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+    email: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -19,57 +18,55 @@ export const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    console.log('Attempting to send login data:', formData);
+    setError("");
+    console.log("Attempting to send login data:", formData);
 
     try {
-      const response = await fetch('http://localhost:4000/formPost', {
-        method: 'POST',
+      const response = await fetch("http://localhost:4000/formPost", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
 
-      console.log('Response received:', response.status);
+      console.log("Response received:", response.status);
       const data = await response.json();
-      console.log('Response data:', data);
+      console.log("Response data:", data);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        throw new Error(data.error || "Login failed");
       }
 
       // If login successful, navigate to home page
-      navigate('/home');
+      navigate("/home");
     } catch (err) {
-      console.error('Detailed error:', err);
-      setError(err.message || 'An error occurred. Please try again.');
+      console.error("Detailed error:", err);
+      setError(err.message || "An error occurred. Please try again.");
     }
   };
 
   return (
-    <div className="bg-black min-h-screen flex items-center justify-center overflow-hidden relative">
-      <div className="absolute inset-0">
-        <SparklesCore
-          id="tsparticlesfullpage"
-          background="transparent"
-          minSize={0.6}
-          maxSize={1.4}
-          particleDensity={100}
-          className="w-full h-full pointer-events-none"
-          particleColor="#FFFFFF"
-        />
-      </div>
-      <div className="bg-transparent p-6 rounded-lg shadow-md relative z-10 max-w-md w-full">
-        <h2 className="text-2xl font-bold text-center mb-4 text-white">Login</h2>
-        {error && <div className="bg-red-100 text-red-700 p-2 rounded mb-4">{error}</div>}
+    <div className="bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center overflow-hidden relative">
+      <div className="bg-transparent p-8 rounded-lg border border-gray-600 shadow-md relative z-10 max-w-md w-full transition duration-300 ease-in-out transform hover:scale-102 hover:shadow-lg hover:border-gray-500">
+        <h2 className=" text-3xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400">
+          Login
+        </h2>
+        {error && (
+          <div className="bg-red-100 text-red-700 p-2 rounded mb-4">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-white font-medium mb-1" htmlFor="email">
+          <div className="mb-6">
+            <label
+              className="block text-white font-medium mb-2"
+              htmlFor="email"
+            >
               Email
             </label>
             <input
-              className="w-full px-4 py-2 text-white border bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+              className="w-full px-4 py-3 text-white bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
               type="email"
               name="email"
               id="email"
@@ -79,12 +76,15 @@ export const Login = () => {
               required
             />
           </div>
-          <div className="mb-4">
-            <label className="block text-white font-medium mb-1" htmlFor="password">
+          <div className="mb-6">
+            <label
+              className="block text-white font-medium mb-2"
+              htmlFor="password"
+            >
               Password
             </label>
             <input
-              className="w-full px-4 py-2 text-white border bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-white"
+              className="w-full px-4 py-3 text-white bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
               type="password"
               name="password"
               id="password"
@@ -96,16 +96,16 @@ export const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full bg-transparent text-white py-2 my-4 rounded-lg hover:bg-white hover:text-black transition duration-200"
+            className="w-full py-3 my-4 bg-gradient-to-r from-blue-400 to-blue-500 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-900 hover:text-white"
           >
             Login
           </button>
         </form>
         <div
           className="text-center mt-4 cursor-pointer text-blue-500 hover:text-blue-700"
-          onClick={() => navigate('/signup')}
+          onClick={() => navigate("/signup")}
         >
-          <h2>Need an account?</h2>
+          <h2 className="text-lg">Need an account?</h2>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import puppeteer from "puppeteer";
 import Groq from "groq-sdk";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 import readline from "readline/promises"; // Use the promises API
 import fs from "fs";
 import pkg from "pg"; // Import the entire 'pg' package
@@ -75,8 +75,8 @@ const groq = new Groq({
 // app.get('/signup', (req, res) => {
 //     res.sendFile(path.join(__dirname, 'public', 'signup.html'));
 // });
-let emailid=process.env.EMAILID;
-let user_id=process.env.USER_ID;
+let emailid = process.env.EMAILID;
+let user_id = process.env.USER_ID;
 
 app.post("/formPost", async (req, res) => {
   try {
@@ -245,7 +245,10 @@ app.post("/api/user/total_balance", async (req, res) => {
     `;
     const transaction_type = operation === "add" ? "deposited" : "withdrawn";
 
-    const transaction_date = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const transaction_date = new Date()
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
     await con.query(query, [
       user_id,
       null,
@@ -265,8 +268,24 @@ app.post("/api/user/total_balance", async (req, res) => {
 
 //THIS IS FOR TRADE
 app.post("/api/user/trade", (req, res) => {
+  //   return res.status(200).json({ msg: "working fine" });
+});
 
-//   return res.status(200).json({ msg: "working fine" });
+app.get("/api/get_stock", async (req, res) => {
+  const get_stock_info = ` 
+  SELECT * 
+  FROM stocks 
+  WHERE user_id=$1
+  `;
+
+  try {
+    const result = await con.query(get_stock_info, [user_id]);
+    //console.log(result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // val this new endpoint for fetching real time company data
@@ -416,7 +435,7 @@ async function scrapeAndStoreStockData() {
       let stock_price = parseFloat(stock.price);
       // const total_shares = getRandomShares(1000, 10000);
 
-    const query = `
+      const query = `
   WITH existing_shares AS (
     SELECT total_shares 
     FROM Companies 
@@ -437,12 +456,12 @@ async function scrapeAndStoreStockData() {
 
       const defaultTotalShares = 5000; // or whatever default value you want for new companies
 
-await client.query(query, [
-  company_name,
-  ticker_symbol,
-  stock_price,
-  defaultTotalShares  // This will only be used for new insertions, not updates
-]);
+      await client.query(query, [
+        company_name,
+        ticker_symbol,
+        stock_price,
+        defaultTotalShares, // This will only be used for new insertions, not updates
+      ]);
       console.log(`Inserted/Updated ${company_name} (${ticker_symbol})`);
     }
   } catch (error) {
@@ -509,13 +528,13 @@ app.get("/api/all_companies", async (req, res) => {
   }
 });
 // this api endpoint is used for buying and selling stocks
-app.post("/api/trade", async(req,res) => {
-  try{
-    const {company_name,quantity1,operation} = req.body;
+app.post("/api/trade", async (req, res) => {
+  try {
+    const { company_name, quantity1, operation } = req.body;
     // console.log("reacher_here");
     console.log(operation, company_name, quantity1);
     // console.log(quantity1);
-    const quantity= parseInt(quantity1);
+    const quantity = parseInt(quantity1);
     // Query for user's balance
     const getUserBalance = `
       SELECT total_balance 
@@ -523,14 +542,14 @@ app.post("/api/trade", async(req,res) => {
       WHERE user_id = $1;
     `;
 
-// Query for company details
+    // Query for company details
     const getCompanyDetails = `
       SELECT company_id, ticker_symbol, stock_price, total_shares
       FROM companies
       WHERE company_name = $1;
     `;
 
-// Execute the queries
+    // Execute the queries
     const userBalance = await con.query(getUserBalance, [user_id]);
     const companyDetails = await con.query(getCompanyDetails, [company_name]);
     const stock_price = parseFloat(companyDetails.rows[0].stock_price);
@@ -538,40 +557,43 @@ app.post("/api/trade", async(req,res) => {
     let total_shares = parseInt(companyDetails.rows[0].total_shares);
     const company_id = companyDetails.rows[0].company_id;
     let userTotalBalance = parseFloat(userBalance.rows[0].total_balance);
-    // aukat pata karni hai 
-    if(operation==="Buy_stock"){
+    // aukat pata karni hai
+    if (operation === "Buy_stock") {
       // console.log(quantity);
-      if(((quantity*stock_price)  <= userTotalBalance) && total_shares >= quantity){
+      if (
+        quantity * stock_price <= userTotalBalance &&
+        total_shares >= quantity
+      ) {
         total_shares = total_shares - quantity;
-        userTotalBalance = userTotalBalance - (quantity*stock_price);
-        const updateUserBalance =`
+        userTotalBalance = userTotalBalance - quantity * stock_price;
+        const updateUserBalance = `
         UPDATE users
         SET total_balance = $1
         WHERE user_id = $2
         `;
-        await con.query(updateUserBalance,[userTotalBalance,user_id]);
-        const updateCompanyShare=`
+        await con.query(updateUserBalance, [userTotalBalance, user_id]);
+        const updateCompanyShare = `
         UPDATE companies
         SET total_shares = $1
         WHERE company_id = $2
         `;
-        await con.query(updateCompanyShare,[total_shares,company_id]);
+        await con.query(updateCompanyShare, [total_shares, company_id]);
         //to update the transaction table
-        const transactionQuery=`
+        const transactionQuery = `
         INSERT INTO transactions (user_id,company_id,transaction_type,quantity,total_amount,transaction_date)
         VALUES($1, $2, $3, $4,$5,$6)
         `;
-        
+
         const values = [
           user_id,
           company_id,
           operation,
           quantity,
-          quantity*stock_price,
-          new Date().toISOString().slice(0, 19).replace('T', ' ')
+          quantity * stock_price,
+          new Date().toISOString().slice(0, 19).replace("T", " "),
         ];
-        console.log(new Date().toISOString().slice(0, 19).replace('T', ' '));
-        await con.query(transactionQuery,values);
+        console.log(new Date().toISOString().slice(0, 19).replace("T", " "));
+        await con.query(transactionQuery, values);
         // console.log(resolt);
         const stock_query = `
         INSERT INTO stocks (user_id, company_id, quantity, company_name, average_price)
@@ -583,70 +605,89 @@ app.post("/api/trade", async(req,res) => {
         average_price = ((stocks.average_price * stocks.quantity) + ($3 *   $5)) / (stocks.quantity + $3);
         `;
         console.log(user_id);
-        await con.query(stock_query, [user_id, company_id, quantity, company_name, stock_price]);
+        await con.query(stock_query, [
+          user_id,
+          company_id,
+          quantity,
+          company_name,
+          stock_price,
+        ]);
         console.log(userTotalBalance);
         res.json(userTotalBalance);
-      }else{
+      } else {
         console.log("Insufficient balance");
-        res.status(404).json({error:"Insufficient balance to carry transaction"});
+        res
+          .status(404)
+          .json({ error: "Insufficient balance to carry transaction" });
       }
-    }else if(operation==="Sell_stock"){
-      const getTotalStockofUser = 
-      ` SELECT quantity
+    } else if (operation === "Sell_stock") {
+      const getTotalStockofUser = ` SELECT quantity
       FROM stocks
       WHERE user_id = $1 AND company_name = $2
       `;
-      const resTotalStockofUser = await con.query(getTotalStockofUser,[user_id,company_name]);
+      const resTotalStockofUser = await con.query(getTotalStockofUser, [
+        user_id,
+        company_name,
+      ]);
       let totalStockofUser = parseInt(resTotalStockofUser.rows[0].quantity);
-      if(totalStockofUser >= quantity) {
-        const reducestockquery= `
+      if (totalStockofUser >= quantity) {
+        const reducestockquery = `
         UPDATE stocks
         SET quantity = $1
         WHERE user_id= $2 AND company_name = $3
         `;
         // console.log((totalStockofUser-quantity));
-        await con.query(reducestockquery,[(totalStockofUser-quantity),user_id,company_name]);
-        userTotalBalance=userTotalBalance + quantity*stock_price;
-         const updateUserBalance =`
+        await con.query(reducestockquery, [
+          totalStockofUser - quantity,
+          user_id,
+          company_name,
+        ]);
+        userTotalBalance = userTotalBalance + quantity * stock_price;
+        const updateUserBalance = `
         UPDATE users
         SET total_balance = $1
         WHERE user_id = $2
         `;
-        await con.query(updateUserBalance,[(userTotalBalance),user_id]);
-        const updateCompanyShare=`
+        await con.query(updateUserBalance, [userTotalBalance, user_id]);
+        const updateCompanyShare = `
         UPDATE companies
         SET total_shares = $1
         WHERE company_id = $2
         `;
-        await con.query(updateCompanyShare,[total_shares+quantity,company_id]);
+        await con.query(updateCompanyShare, [
+          total_shares + quantity,
+          company_id,
+        ]);
         //to update the transaction table
-        const transactionQuery=`
+        const transactionQuery = `
         INSERT INTO Transactions (user_id,company_id,transaction_type,quantity,total_amount,transaction_date)
         VALUES($1, $2, $3, $4,$5,$6)
         `;
-        
+
         const values = [
           user_id,
           company_id,
           operation,
           quantity,
-          quantity*stock_price,
-          new Date().toISOString().slice(0, 19).replace('T', ' ')
+          quantity * stock_price,
+          new Date().toISOString().slice(0, 19).replace("T", " "),
         ];
-        await con.query(transactionQuery,values);
+        await con.query(transactionQuery, values);
         console.log(userTotalBalance);
         res.json(userTotalBalance);
-      }else{
-        res.status(404).json({error:"Insufficient Stocks. Please verify"});
+      } else {
+        res.status(404).json({ error: "Insufficient Stocks. Please verify" });
       }
     }
-  }catch(err){
-    res.status(400).json({error:"Error in fetching the total balance of the user"});
+  } catch (err) {
+    res
+      .status(400)
+      .json({ error: "Error in fetching the total balance of the user" });
   }
 });
 //function to extract real-time-news
 const scrapeNews = async () => {
-  const url = 'https://www.google.com/finance/?hl=en';
+  const url = "https://www.google.com/finance/?hl=en";
 
   // Launch Puppeteer
   const browser = await puppeteer.launch();
@@ -659,12 +700,12 @@ const scrapeNews = async () => {
     // Scrape news headlines and hyperlinks
     const newsData = await page.evaluate(() => {
       const newsItems = [];
-      const elements = document.querySelectorAll('.Yfwt5'); // Adjust selector if necessary
+      const elements = document.querySelectorAll(".Yfwt5"); // Adjust selector if necessary
 
       elements.forEach((element) => {
         const headline = element.textContent.trim();
         console.log(headline);
-        const linkElement = element.closest('a'); // Get closest parent `<a>` tag
+        const linkElement = element.closest("a"); // Get closest parent `<a>` tag
         const hyperlink = linkElement ? linkElement.href : null;
 
         if (headline && hyperlink) {
@@ -674,27 +715,27 @@ const scrapeNews = async () => {
 
       return newsItems;
     });
-    
+
     // Display the extracted data in JSON format on the console
     return newsData;
   } catch (error) {
-    console.error('Error scraping the data:', error);
+    console.error("Error scraping the data:", error);
   } finally {
     // Close the browser
     await browser.close();
   }
 };
 //api for current news
-app.get("/api/current_news",async (req,res) => {
-  try{
+app.get("/api/current_news", async (req, res) => {
+  try {
     const news = await scrapeNews();
     console.log("news extracted successfully");
     res.json(news);
-  }catch(err){
-    console.error("Error fetching in real time news:",err);
-    res.status(500).json({error:"Error fetching in real time news" });
+  } catch (err) {
+    console.error("Error fetching in real time news:", err);
+    res.status(500).json({ error: "Error fetching in real time news" });
   }
-})
+});
 app.get("/api/real-time-data/:symbol", async (req, res) => {
   try {
     const { symbol } = req.params;
@@ -707,10 +748,14 @@ app.get("/api/real-time-data/:symbol", async (req, res) => {
       result.rows.length,
       "records"
     );
-    const company_id =parseInt(result.rows[0].company_id);
-    const stock_price=parseInt(result.rows[0].stock_price);
-    const total_shares=parseInt(result.rows[0].total_shares);
-    res.json({ company_id:company_id, stock_price:stock_price, total_shares:total_shares });
+    const company_id = parseInt(result.rows[0].company_id);
+    const stock_price = parseInt(result.rows[0].stock_price);
+    const total_shares = parseInt(result.rows[0].total_shares);
+    res.json({
+      company_id: company_id,
+      stock_price: stock_price,
+      total_shares: total_shares,
+    });
   } catch (err) {
     console.error("Error fetching real-time data:", err);
     res.status(500).json({ error: "Error fetching real-time data" });
@@ -804,15 +849,15 @@ const extractTableContent = async (tableName) => {
     // Get all data from the table
     const query = `SELECT * FROM ${tableName};`;
     const result = await con.query(query);
-    
+
     // Convert the table content to a formatted string
     const contentString = result.rows
-      .map(row => JSON.stringify(row))
-      .join('\n');
-    
+      .map((row) => JSON.stringify(row))
+      .join("\n");
+
     return {
       data: result.rows,
-      contentString: contentString
+      contentString: contentString,
     };
   } catch (error) {
     console.error(`Error extracting content from ${tableName}:`, error);
@@ -821,12 +866,20 @@ const extractTableContent = async (tableName) => {
 };
 
 // Function to generate SQL query with table content context
-const generateSQLQuery = async (prompt, dbStructure, tableName, tableContent) => {
+const generateSQLQuery = async (
+  prompt,
+  dbStructure,
+  tableName,
+  tableContent
+) => {
   // Create context with schema and table content
   const tableSchema = dbStructure[tableName];
   const schemaContext = `Table ${tableName}:\nColumns: ${tableSchema
     .map((col) => `${col.column}: ${col.type}`)
-    .join(", ")}\n\nTable content sample:\n${tableContent.contentString.slice(0, 1000)}...`; // Limiting content sample to avoid token limits
+    .join(", ")}\n\nTable content sample:\n${tableContent.contentString.slice(
+    0,
+    1000
+  )}...`; // Limiting content sample to avoid token limits
 
   const completion = await groq.chat.completions.create({
     messages: [
@@ -852,7 +905,13 @@ const generateSQLQuery = async (prompt, dbStructure, tableName, tableContent) =>
 };
 
 // Function to interpret query results
-const interpretResults = async (prompt, queryResults, query, tableName, tableContent) => {
+const interpretResults = async (
+  prompt,
+  queryResults,
+  query,
+  tableName,
+  tableContent
+) => {
   const completion = await groq.chat.completions.create({
     messages: [
       {
@@ -886,21 +945,26 @@ app.post("/api/processPrompt", async (req, res) => {
 
     // Step 1: Get database schema
     const dbStructure = await getTableStructures();
-    
+
     // Step 2: Determine the relevant table
     const relevantTable = await determineRelevantTable(prompt, dbStructure);
-    
+
     // Step 3: Extract content from the relevant table
     const tableContent = await extractTableContent(relevantTable);
-    
+
     // Step 4: Generate SQL query with context
-    const sqlQuery = await generateSQLQuery(prompt, dbStructure, relevantTable, tableContent);
+    const sqlQuery = await generateSQLQuery(
+      prompt,
+      dbStructure,
+      relevantTable,
+      tableContent
+    );
     console.log("Generated SQL Query:", sqlQuery);
-    
+
     // Step 5: Execute the query
     const sqlQueryTrim = sqlQuery.replace(/^```|```$/g, "").trim();
     const queryResult = await con.query(sqlQueryTrim);
-    
+
     // Step 6: Interpret results with full context
     const interpretation = await interpretResults(
       prompt,

@@ -1,104 +1,110 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom';
-import './signup.css';
-import { SparklesCore } from "../ui/sparkles";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 export const Signup = () => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
   });
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     try {
-      const response = await fetch('http://localhost:4000/signUpPost', {
-        method: 'POST',
+      const response = await fetch("http://localhost:4000/signUpPost", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Signup failed');
+        throw new Error(data.error || "Signup failed");
       }
 
-      // If signup successful, navigate to home page
-      navigate('/login');
+      navigate("/login");
     } catch (err) {
-      console.error('Error:', err);
+      console.error("Error:", err);
       setError(err.message);
     }
   };
 
   return (
-    <div>
-      <div className="bg-black min-h-screen flex items-center justify-center overflow-hidden relative">
-        <div className="absolute inset-0">
-                <SparklesCore
-                  id="tsparticlesfullpage"
-                  background="transparent"
-                  minSize={0.6}
-                  maxSize={1.4}
-                  particleDensity={100}
-                  className="w-full h-full pointer-events-none"
-                  particleColor="#FFFFFF"
-                />
-              </div>
-          <div className="bg-transparent p-6 rounded-lg shadow-md relative z-10 max-w-md w-full">
-            <h2 className = "text-2xl font-bold text-center mb-4 text-white">Sign up</h2>
-          {error && <div className="">{error}</div>}
-        <form onSubmit={handleSubmit} className="signupform">
-          
-          <div className="mb-4">
-            <label htmlFor="firstName" className="block text-white font-bold mb-1">First Name</label>
-            <input 
-              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white" 
-              type="text" 
-              name="firstName" 
-              id="firstName" 
+    <div className="bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center overflow-hidden relative">
+      <div className="bg-transparent p-8 rounded-lg border border-gray-600 shadow-md relative z-10 max-w-md w-full transition duration-300 ease-in-out transform hover:scale-102 hover:shadow-lg hover:border-gray-500">
+        <h2 className="text-3xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400">
+          Sign up
+        </h2>
+        {error && (
+          <div className="bg-red-100 text-red-700 p-2 rounded mb-4">
+            {error}
+          </div>
+        )}
+        <form onSubmit={handleSubmit}>
+          <div className="mb-6">
+            <label
+              className="block text-white font-medium mb-2"
+              htmlFor="firstName"
+            >
+              First Name
+            </label>
+            <input
+              className="w-full px-4 py-3 text-white bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+              type="text"
+              name="firstName"
+              id="firstName"
               placeholder="First Name"
               value={formData.firstName}
               onChange={handleChange}
               required
             />
           </div>
-          
-          <div className="mb-4">
-            <label htmlFor="lastName" className="block text-white font-bold mb-1">Last Name</label>
-            <input 
-              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white" 
-              type="text" 
-              name="lastName" 
-              id="lastName" 
+
+          <div className="mb-6">
+            <label
+              className="block text-white font-medium mb-2"
+              htmlFor="lastName"
+            >
+              Last Name
+            </label>
+            <input
+              className="w-full px-4 py-3 text-white bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+              type="text"
+              name="lastName"
+              id="lastName"
               placeholder="Last Name"
               value={formData.lastName}
               onChange={handleChange}
             />
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="email" className="block text-white font-bold mb-1">Email</label>
-            <input 
-              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white" 
-              type="email" 
-              name="email" 
-              id="email" 
+          <div className="mb-6">
+            <label
+              className="block text-white font-medium mb-2"
+              htmlFor="email"
+            >
+              Email
+            </label>
+            <input
+              className="w-full px-4 py-3 text-white bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+              type="email"
+              name="email"
+              id="email"
               placeholder="Email"
               value={formData.email}
               onChange={handleChange}
@@ -106,13 +112,18 @@ export const Signup = () => {
             />
           </div>
 
-          <div className="mb-4">
-            <label htmlFor="password" className="block text-white font-bold mb-1">Password</label>
+          <div className="mb-6">
+            <label
+              className="block text-white font-medium mb-2"
+              htmlFor="password"
+            >
+              Password
+            </label>
             <input
-              className="bg-transparent text-white px-2 py-2 border rounded-lg focus:ring-2 focus:ring-white"
-              type="password" 
-              name="password" 
-              id="password" 
+              className="w-full px-4 py-3 text-white bg-transparent border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-500"
+              type="password"
+              name="password"
+              id="password"
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
@@ -120,11 +131,19 @@ export const Signup = () => {
             />
           </div>
 
-          <div className="mb-4">
-            <button type="submit" className="text-white border rounded-lg px-2 py-1 mt-2 bg-transparent  hover:bg-white hover:text-black transition duration-200">Register</button>
-          </div>
+          <button
+            type="submit"
+            className="w-full py-3 my-4 bg-gradient-to-r from-blue-400 to-blue-500 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-900 hover:text-white"
+          >
+            Register
+          </button>
         </form>
-      </div>
+        <div
+          className="text-center mt-4 cursor-pointer text-blue-500 hover:text-blue-700"
+          onClick={() => navigate("/login")}
+        >
+          <h2 className="text-lg">Already have an account?</h2>
+        </div>
       </div>
     </div>
   );

@@ -9,46 +9,65 @@ const Trade = () => {
   const [operation, setOperation] = useState("Buy_stock");
   const [error, setError] = useState(null);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [success , setSuccess] = useState("");
-  const [loading, setLoading]  = useState("Loading...");
+  const [stockinfo, setStockInfo] = useState([]);
+  const [success, setSuccess] = useState("");
+  const [err, seterr] = useState("");
+  const [loading, setLoading] = useState("Loading...");
+  const [isVisible, setIsVisible] = useState(false);
   // const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [news, setNews] = useState([]);
 
   useEffect(() => {
     fetchCompanies();
     fetchNews();
+    fetchStockInfo();
   }, []);
 
   // Filter companies based on search input
-  const filteredCompanies = companies.filter((company)=>
+  const filteredCompanies = companies.filter((company) =>
     company.company_name.toLowerCase().includes(search.toLowerCase())
   );
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/all_companies');
+      const response = await fetch("http://localhost:4000/api/all_companies");
       if (!response.ok) {
-        throw new Error('Failed to fetch data');
+        throw new Error("Failed to fetch data");
       }
       const data = await response.json();
       setLoading(null);
       setCompanies(data);
     } catch (err) {
-      console.error('Error fetching all company data:', err);
-      setError('Failed to load company data');
+      console.error("Error fetching all company data:", err);
+      setError("Failed to load company data");
+    }
+  };
+
+  const fetchStockInfo = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/get_stock");
+      if (!response.ok) {
+        throw new Error("Failed to fetch data");
+      }
+
+      const data = await response.json();
+      setStockInfo(data);
+    } catch (err) {
+      console.error("Error fetching all company data:", err);
+      setError("Failed to load company data");
     }
   };
 
   const fetchNews = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/current_news');
-      if (!response.ok) throw new Error('Failed to fetch news');
+      const response = await fetch("http://localhost:4000/api/current_news");
+      if (!response.ok) throw new Error("Failed to fetch news");
       const data = await response.json();
       // console.log(data);
 
       setNews(data);
     } catch (err) {
-      console.error('Error fetching news:', err);
+      console.error("Error fetching news:", err);
     }
   };
 
@@ -77,7 +96,7 @@ const Trade = () => {
     setSearch(company.name);
     // setFilteredCompanies([]);
   };
-  
+
   const handleTradeSubmit = async (e) => {
     e.preventDefault();
     if (!selectedCompany || !quantity) {
@@ -89,12 +108,26 @@ const Trade = () => {
       await fetchparticularcompany(selectedCompany, quantity, operation);
       console.log("reached here");
       setError(null);
+      setTimeout(() => {
+        setIsVisible(false); // Start fading
+      }, 2000); // Message stays for 3 seconds
+
+      setTimeout(() => {
+        setSuccess(null);
+      }, 4000);
       // Reset form
       setQuantity("");
       setSelectedCompany(null);
       setSearch("");
+      setSuccess("Stock bought  Successfully!");
+      operation === "Buy_stock"
+        ? setSuccess("Stock bought  Successfully!")
+        : setSuccess("Stock sold  Successfully!");
+      fetchStockInfo();
     } catch (err) {
-      operation === "Buy_stock" ? setError("Insufficient Balance") : setError("You do not own it!");
+      operation === "Buy_stock"
+        ? setError("Insufficient Balance")
+        : setError("You do not own it!");
     }
   };
   return (
@@ -102,37 +135,35 @@ const Trade = () => {
       <Navbar />
       <div className="justify-center item-center max-h-screen mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left Sidebar - Market News */}
-            <div className="lg:col-span-3 bg-gray-900 rounded-lg p-6 h-[calc(100vh-200px)] overflow-y-auto shadow-lg scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
-              <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
-                Market News
-              </h2>
-              <div className="space-y-4">
-                {loading === null ? (
-                  <ul className="space-y-3">
-                    {news.map((article, index) => (
-                      <li
-                        key={index}
-                        className="group bg-gray-800 hover:bg-gray-700 rounded-lg p-4 transition-colors duration-200"
+          {/* Left Sidebar - Market News */}
+          <div className="lg:col-span-3 bg-gray-900 rounded-lg p-6 h-[calc(100vh-200px)] overflow-y-auto shadow-lg scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+            <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
+              Market News
+            </h2>
+            <div className="space-y-4">
+              {loading === null ? (
+                <ul className="space-y-3">
+                  {news.map((article, index) => (
+                    <li
+                      key={index}
+                      className="group bg-gray-800 hover:bg-gray-700 rounded-lg p-4 transition-colors duration-200"
+                    >
+                      <a
+                        href={article.hyperlink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 group-hover:text-blue-300 font-medium transition-colors duration-200"
                       >
-                        <a
-                          href={article.hyperlink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-400 group-hover:text-blue-300 font-medium transition-colors duration-200"
-                        >
-                          {article.headline}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div className="text-center text-gray-400">
-                    {loading}
-                  </div>
-                )}
-              </div>
+                        {article.headline}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-center text-gray-400">{loading}</div>
+              )}
             </div>
+          </div>
 
           {/* Middle Section - Trade Form */}
           <div className="lg:col-span-5 bg-gray-900 rounded-lg p-6">
@@ -147,16 +178,15 @@ const Trade = () => {
                   className="w-full bg-black border border-gray-700 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 {/* Search Suggestions */}
-                
               </div>
-                    <div className="text-center">{selectedCompany}</div>
+              <div className="text-center">{selectedCompany}</div>
               {/* Trade Options */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block mb-2">Operation</label>
                   <select
-                      value={operation}
-                      onChange={(e) => {
+                    value={operation}
+                    onChange={(e) => {
                       console.log("Selected value:", e.target.value); // Debugging
                       setOperation(e.target.value);
                     }}
@@ -184,6 +214,15 @@ const Trade = () => {
                   {error}
                 </div>
               )}
+              {success && (
+                <div
+                  className={`bg-green-100 border border-green-400 text-green-700 px-4 py-2 rounded ${
+                    isVisible ? "fade-in" : "fade-out"
+                  }`}
+                >
+                  {success}
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -192,12 +231,43 @@ const Trade = () => {
                 Execute Trade
               </button>
             </form>
+            <div className="bg-gray-900 max-h-[298px] overflow-y-auto rounded-2xl shadow-md relative z-10 w-full mt-4">
+              <table className="bg-transparent rounded-2xl text-white w-full border-separate border-spacing-0">
+                <thead>
+                  <tr className="bg-gray-700">
+                    <th className="p-3 text-left text-white">Company Name</th>
+                    <th className="p-3 text-center text-white">Stocks Owned</th>
+                    <th className="p-3 text-right text-white">Money Spent</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stockinfo
+                    .filter((stock) => stock.quantity !== 0)
+                    .map((stock, index) => (
+                      <tr
+                        key={index}
+                        className="hover:bg-gray-800 transition-colors"
+                      >
+                        <td className="p-3 text-left text-white">
+                          {stock.company_name}
+                        </td>
+                        <td className="p-3 text-white text-center">
+                          {stock.quantity}
+                        </td>
+                        <td className="p-3 text-white text-center">
+                          {(stock.quantity * stock.average_price).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-         {/* Right Sidebar - Stock Details */}
-            <div className="lg:col-span-4 bg-gray-900 max-h-[498px] overflow-y-auto rounded-2xl shadow-md relative z-10 w-full">
-              {/* <h2 className="text-xl font-bold mb-4">Stock Details</h2> */}
-              <table className="bg-transparent rounded-2xl text-white w-full border-separate border-spacing-0">
+          {/* Right Sidebar - Stock Details */}
+          <div className="lg:col-span-4 bg-gray-900 max-h-[498px] overflow-y-auto rounded-2xl shadow-md relative z-10 w-full">
+            {/* <h2 className="text-xl font-bold mb-4">Stock Details</h2> */}
+            <table className="bg-transparent rounded-2xl text-white w-full border-separate border-spacing-0">
               <thead>
                 <tr className="bg-gray-700" class="relative">
                   <th className="p-3 text-left text-white">Company Name</th>
@@ -214,13 +284,14 @@ const Trade = () => {
                   >
                     <td className="p-3 text-white">{company.company_name}</td>
                     <td className="p-3 text-white">{company.stock_price}</td>
-                    <td className="p-3 text-white text-center">{company.total_shares}</td>
+                    <td className="p-3 text-white text-center">
+                      {company.total_shares}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            </div>
-
+          </div>
         </div>
       </div>
     </div>
