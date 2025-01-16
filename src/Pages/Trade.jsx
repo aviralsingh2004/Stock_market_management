@@ -130,6 +130,7 @@ const Trade = () => {
         : setError("You do not own it!");
     }
   };
+
   return (
     <div className="min-h-screen bg-black text-white">
       <Navbar />
@@ -271,8 +272,8 @@ const Trade = () => {
               <thead>
                 <tr className="bg-gray-700" class="relative">
                   <th className="p-3 text-left text-white">Company Name</th>
-                  <th className="p-3 text-left text-white">Stock Price</th>
-                  <th className="p-3 text-center text-white">Stock Left</th>
+                  <th className="p-3 text-center text-white">Stock Price</th>
+                  <th className="p-3 text-right text-white">Stock Left</th>
                 </tr>
               </thead>
               <tbody>
@@ -282,9 +283,13 @@ const Trade = () => {
                     className="hover:bg-gray-800 transition-colors cursor-pointer"
                     onClick={() => setSelectedCompany(company.company_name)}
                   >
-                    <td className="p-3 text-white">{company.company_name}</td>
-                    <td className="p-3 text-white">{company.stock_price}</td>
-                    <td className="p-3 text-white text-center">
+                    <td className="p-3 text-left text-white">
+                      {company.company_name}
+                    </td>
+                    <td className="p-3 text-center text-white">
+                      {company.stock_price}
+                    </td>
+                    <td className="p-3 text-right text-white  ">
                       {company.total_shares}
                     </td>
                   </tr>
