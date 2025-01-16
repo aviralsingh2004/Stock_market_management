@@ -146,7 +146,6 @@ export const Home = () => {
           />
         </div>
 
-<<<<<<< HEAD
         {historicalData && (
           <div className="chart-container" ref={chartRef}>
             <Line data={chartData} options={chartOptions} />
@@ -196,48 +195,6 @@ export const Home = () => {
             </div>
           </div>
         </div>
-=======
-      <div className="bg-transparent p-6 rounded-2xl shadow-md relative z-10 max-w w-full">
-        <table className="bg-black rounded-2xl text-white">
-          <thead>
-            <tr className="bg-transparent">
-              <th className="pl-1">Symbol</th>
-              <th className="pl-1">Date</th>
-              <th className="pl-1">Open ($)</th>
-              <th className="pl-1">High ($)</th>
-              <th className="pl-1">Low ($)</th>
-              <th className="pl-1">Close ($)</th>
-              <th className="pl-1">Volume</th>
-              <th className="pl-1">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredCompanies.map((company, index) => (
-              <tr key={index}>
-                <td className="text-white pl-1">{company.symbol}</td>
-                <td className="text-white pl-1">
-                  {new Date(company.date).toLocaleDateString()}
-                </td>
-                <td className="text-white pl-1">{company.open.toFixed(2)}</td>
-                <td className="text-white pl-1">{company.high.toFixed(2)}</td>
-                <td className="text-white pl-1">{company.low.toFixed(2)}</td>
-                <td className="text-white pl-1">{company.close.toFixed(2)}</td>
-                <td className="text-white pl-1">
-                  {company.volume.toLocaleString()}
-                </td>
-                <td className="text-white pl-1">
-                  <button
-                    className="bg-transparent text-white border py-1 px-2 rounded-lg hover:bg-white hover:text-black transition duration-200"
-                    onClick={() => handleCompanySelect(company.symbol)}
-                  >
-                    View Graph
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
->>>>>>> 1460e21b94931f925167d4002f4beeebd39989b9
       </div>
     </div>
   );
