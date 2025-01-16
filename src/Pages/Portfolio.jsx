@@ -29,7 +29,7 @@ const Trade = () => {
   return (
     <div>
       <Navbar />
-      <div className="text-center text-white mb-4">
+      <div className="text-center text-white mt-[68px] mb-4">
         <p className="text-lg">Current Balance: ${balance}</p>
       </div>
     </div>

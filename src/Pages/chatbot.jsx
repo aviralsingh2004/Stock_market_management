@@ -74,9 +74,8 @@ const ChatInterface = () => {
     <div className="flex h-screen flex-col bg-black">
       <Navbar />
       {/* Header */}
-      <div className="bg-black border-b border-gray-700 p-4">
+      <div className="bg-black border-b border-gray-700 p-4 mt-[68px]">
         <h1 className="text-xl font-semibold text-center text-white">
-          {" "}
           DataBridge AI
         </h1>
       </div>

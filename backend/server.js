@@ -183,6 +183,21 @@ app.post("/signUpPost", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+//api endpoint for fetching username
+app.get("/api/username",async (req,res)=>{
+  try{
+    const query = `SELECT first_name FROM Users WHERE email= $1`;
+    const result = await con.query(query,[emailid]);
+     if (result.rows.length == 0) {
+      return res.status(400).json({ error: "User not found" });
+    }
+    console.log(result.rows);
+    res.json(result.rows[0].first_name);
+  }catch(err){
+    console.error("Error in fetching username",error);
+    res.status(500).json({error:"username not found!"});
+  }
+})
 //api endpoint for finding total-balance
 app.get("/api/user/balance", async (req, res) => {
   try {

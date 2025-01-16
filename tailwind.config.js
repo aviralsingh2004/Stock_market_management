@@ -1,4 +1,5 @@
-module.exports = {
+import withMT from "@material-tailwind/react/utils/withMT";
+module.exports = withMT({
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   presets: [],
   darkMode: "media", // or 'class'
@@ -1071,4 +1072,4 @@ module.exports = {
     },
   },
   plugins: ["tailwind-scrollbar"],
-};
+});
