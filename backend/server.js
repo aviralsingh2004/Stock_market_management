@@ -157,6 +157,7 @@ app.post("/signUpPost", async (req, res) => {
     // Hash the password
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const total_balance = 0;
     // Insert new user into the USERS table
     const user_id = `user-${Date.now()}`; // Generate a simple unique identifier
@@ -285,6 +286,36 @@ app.get("/api/get_stock", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+//api endpoint to get transaction infromtion
+app.get("/api/get_transaction", async (req, res) => {
+  // SQL query to fetch transactions with company name
+  const get_transaction_query = `
+    SELECT 
+      t.company_id, 
+      c.company_name, -- Fetch company name from the company table
+      t.transaction_type, 
+      t.quantity, 
+      t.total_amount, 
+      t.transaction_date,
+      CASE 
+        WHEN t.quantity = 0 THEN t.total_amount
+        ELSE t.quantity * t.total_amount
+      END AS calculated_amount
+    FROM transactions t
+    JOIN company c ON t.company_id = c.company_id -- Join with the company table
+    WHERE t.user_id = $1
+  `;
+
+  try {
+    const result = await con.query(get_transaction_query, [user_id]);
+    console.log("Received transaction history:", result.rows);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error in getting the transaction history:", error);
+    res.status(500).json({ message: "Error in fetching the transaction data" });
   }
 });
 
@@ -986,6 +1017,7 @@ app.post("/api/processPrompt", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 app.get("/api/historical/:symbol", async (req, res) => {
   try {
     const { symbol } = req.params;

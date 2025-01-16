@@ -8,7 +8,7 @@ import Funds from "./Pages/Funds";
 import Porfolio from "./Pages/Portfolio";
 import Trade from "./Pages/Trade";
 import Chatbot from "./Pages/chatbot.jsx";
-import ChatInterface from "./Pages/chatbot";
+
 import "./App.css";
 // import { Home } from '@mui/icons-material';
 function App() {
