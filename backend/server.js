@@ -184,7 +184,7 @@ app.post("/signUpPost", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-//api endpoint for fetching username
+//api endpoint for getting username
 app.get("/api/username",async (req,res)=>{
   try{
     const query = `SELECT first_name FROM Users WHERE email= $1`;
