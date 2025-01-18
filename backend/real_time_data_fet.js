@@ -203,4 +203,4 @@ await client.query(query, [
 }
 
 // Export the named function for reuse in other files
-scrapeAndStoreStockData();
+export default scrapeAndStoreStockData;
