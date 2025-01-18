@@ -185,20 +185,20 @@ app.post("/signUpPost", async (req, res) => {
   }
 });
 //api endpoint for fetching username
-app.get("/api/username",async (req,res)=>{
-  try{
+app.get("/api/username", async (req, res) => {
+  try {
     const query = `SELECT first_name FROM Users WHERE email= $1`;
-    const result = await con.query(query,[emailid]);
-     if (result.rows.length == 0) {
+    const result = await con.query(query, [emailid]);
+    if (result.rows.length == 0) {
       return res.status(400).json({ error: "User not found" });
     }
     console.log(result.rows);
     res.json(result.rows[0].first_name);
-  }catch(err){
-    console.error("Error in fetching username",error);
-    res.status(500).json({error:"username not found!"});
+  } catch (err) {
+    console.error("Error in fetching username", error);
+    res.status(500).json({ error: "username not found!" });
   }
-})
+});
 //api endpoint for finding total-balance
 app.get("/api/user/balance", async (req, res) => {
   try {
@@ -306,27 +306,32 @@ app.get("/api/get_stock", async (req, res) => {
 
 //api endpoint to get transaction infromtion
 app.get("/api/get_transaction", async (req, res) => {
-  // SQL query to fetch transactions with company name
+  //  const user_id = req.query.user_id; // Get user_id from query parameter
+
+  // SQL query to fetch transactions with company details
   const get_transaction_query = `
     SELECT 
-      t.company_id, 
-      c.company_name, -- Fetch company name from the company table
-      t.transaction_type, 
-      t.quantity, 
-      t.total_amount, 
+      t.transaction_id,
+      t.user_id,
+      t.company_id,
+      c.company_name, -- Fetch company name if applicable
+      t.transaction_type,
+      t.quantity,
+      t.total_amount,
       t.transaction_date,
       CASE 
-        WHEN t.quantity = 0 THEN t.total_amount
-        ELSE t.quantity * t.total_amount
+        WHEN t.quantity = 0 THEN t.total_amount -- For deposits/withdrawals
+        ELSE t.quantity * t.total_amount       -- For stock transactions
       END AS calculated_amount
     FROM transactions t
-    JOIN company c ON t.company_id = c.company_id -- Join with the company table
+    LEFT JOIN companies c ON t.company_id = c.company_id -- Include company info if applicable
     WHERE t.user_id = $1
+    ORDER BY t.transaction_date DESC; -- Sort by most recent transaction
   `;
 
   try {
     const result = await con.query(get_transaction_query, [user_id]);
-    console.log("Received transaction history:", result.rows);
+    // console.log("Received transaction history:", result.rows);
     res.json(result.rows);
   } catch (error) {
     console.error("Error in getting the transaction history:", error);
@@ -573,6 +578,24 @@ app.get("/api/all_companies", async (req, res) => {
     res.status(500).json({ error: "Error fetching company data" });
   }
 });
+
+//this api is to get particular transaction type
+app.get("/api/know_transaction/:type", async (req, res) => {
+  try {
+    const { type } = req.params;
+
+    const query = `SELECT * FROM transactions WHERE transaction_type=$1 AND user_id=$2`;
+
+    const result = await con.query(query, [type, user_id]);
+
+    console.log("Backend result:", result.rows); // Log the result to debug
+    res.json(result.rows); // Send the rows as JSON
+  } catch (error) {
+    console.error("Error fetching transaction information:", error);
+    res.status(404).json({ error: "Error fetching data" });
+  }
+});
+
 // this api endpoint is used for buying and selling stocks
 app.post("/api/trade", async (req, res) => {
   try {
@@ -731,6 +754,7 @@ app.post("/api/trade", async (req, res) => {
       .json({ error: "Error in fetching the total balance of the user" });
   }
 });
+
 //function to extract real-time-news
 const scrapeNews = async () => {
   const url = "https://www.google.com/finance/?hl=en";
@@ -771,6 +795,7 @@ const scrapeNews = async () => {
     await browser.close();
   }
 };
+
 //api for current news
 app.get("/api/current_news", async (req, res) => {
   try {
@@ -782,6 +807,7 @@ app.get("/api/current_news", async (req, res) => {
     res.status(500).json({ error: "Error fetching in real time news" });
   }
 });
+
 app.get("/api/real-time-data/:symbol", async (req, res) => {
   try {
     const { symbol } = req.params;
