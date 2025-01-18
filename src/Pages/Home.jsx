@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
-import "./home.css";
-import Navbar from "../Components/Navbar/Navbar";
-import { Line } from "react-chartjs-2";
-
+import React, { useState, useEffect, useRef } from 'react';
+import './home.css';
+import Navbar from '../Components/Navbar/Navbar';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,7 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from "chart.js";
+} from 'chart.js';
 
 // Register ChartJS components
 ChartJS.register(
@@ -29,7 +28,7 @@ export const Home = () => {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [historicalData, setHistoricalData] = useState(null);
   const chartRef = useRef(null); // Ref for chart container
@@ -40,45 +39,43 @@ export const Home = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/companies");
+      const response = await fetch('http://localhost:4000/api/companies');
       if (!response.ok) {
-        throw new Error("Failed to fetch data");
+        throw new Error('Failed to fetch data');
       }
       const data = await response.json();
       setCompanies(data);
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching companies:", err);
-      setError("Failed to load company data");
+      console.error('Error fetching companies:', err);
+      setError('Failed to load company data');
       setLoading(false);
     }
   };
 
   const fetchHistoricalData = async (symbol) => {
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/historical/${symbol}`
-      );
+      const response = await fetch(`http://localhost:4000/api/historical/${symbol}`);
       if (!response.ok) {
-        throw new Error("Failed to fetch historical data");
+        throw new Error('Failed to fetch historical data');
       }
       const data = await response.json();
       setHistoricalData(data);
       setSelectedCompany(symbol);
       scrollToChart(); // Scroll to the chart after selecting a company
     } catch (err) {
-      console.error("Error fetching historical data:", err);
-      setError("Failed to load historical data");
+      console.error('Error fetching historical data:', err);
+      setError('Failed to load historical data');
     }
   };
 
   const scrollToChart = () => {
-    chartRef.current?.scrollIntoView({ behavior: "smooth" });
+    chartRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    if (e.target.value.trim() !== "") {
+    if (e.target.value.trim() !== '') {
       setHistoricalData(null); // Hide chart during search
       setSelectedCompany(null);
     }
@@ -94,15 +91,13 @@ export const Home = () => {
 
   const chartData = historicalData
     ? {
-        labels: historicalData.map((data) =>
-          new Date(data.date).toLocaleDateString()
-        ),
+        labels: historicalData.map((data) => new Date(data.date).toLocaleDateString()),
         datasets: [
           {
             label: `${selectedCompany} Stock Price`,
             data: historicalData.map((data) => data.close),
             fill: true,
-            borderColor: "rgb(123, 192, 192)",
+            borderColor: 'rgb(75, 192, 192)',
             tension: 0.1,
           },
         ],
@@ -113,11 +108,11 @@ export const Home = () => {
     responsive: true,
     plugins: {
       legend: {
-        position: "top",
+        position: 'top',
       },
       title: {
         display: true,
-        text: "Stock Price History",
+        text: 'Stock Price History',
       },
     },
     scales: {
@@ -131,7 +126,7 @@ export const Home = () => {
   if (error) return <div className="error">{error}</div>;
 
    return (
-    <div className="bg-black">
+    <div className="bg-gradient-to-br from-blue-900 to-blue-950">
       <Navbar />
       <div className="pt-[68px] mt-2 z-0">
         <div className="mt-5 mb-5 font-bold text-4xl">Stock Listing</div>
