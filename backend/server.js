@@ -909,7 +909,54 @@ app.post("/api/processPrompt", async (req, res) => {
   }
 });
 //api endpoint for calculating profit and loss
-
+app.get("/api/profitloss",async(req,res)=>{
+  try{
+    const query1 = `
+        SELECT SUM(quantity * average_price) AS net_investment
+        FROM stocks
+        WHERE user_id = $1
+    `;
+    const response1 = await con.query(query1,[user_id]);
+    const netinvested = response1.rows[0].net_investment;
+    // console.log(netinvested);
+    const query2 = `
+      SELECT SUM(stock_price * quantity) AS net_recieved
+      FROM companies,stocks 
+      WHERE stocks.company_id = companies.company_id AND user_id = $1
+    `;
+    const response2 = await con.query(query2,[user_id]);
+    const netrecieved = response2.rows[0].net_recieved;
+    if(netrecieved > netinvested){
+      res.json({
+        status:"profit",
+        amount:(netrecieved-netinvested).toFixed(2),
+      })
+    }
+    res.json({
+      status:"loss",
+      amount:(netinvested-netrecieved).toFixed(2),
+    });
+  } catch(error){
+    console.error({error:"Error in fetching profit/loss"});
+    res.status(500).json({error:"Error in fetching profit/loss"});
+  }
+});
+//api endpoint for finding profit/loss for particular companies
+app.get("/api/particularprofitloss",async(req,res)=>{
+  try{
+    const query1=`
+      SELECT stocks.company_id ,stocks.company_name,stocks.average_price,companies.stock_price,stocks.quantity
+      FROM stocks, companies
+      WHERE stocks.quantity > 0 AND user_id = $1 AND stocks.company_id = companies.company_id;
+    `;
+    const response1 = await con.query(query1,[user_id]);
+    // console.log(response1.rows);
+    res.json(response1.rows);
+  }catch(error){
+    console.error({error:"Error in fetching particular company profit/loss"});
+    res.status(500).json({error:"Error in fetching particular company profit/loss"});
+  }
+});
 //api endpoint for historical symbol
 app.get("/api/historical/:symbol", async (req, res) => {
   try {
