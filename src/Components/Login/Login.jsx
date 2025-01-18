@@ -49,7 +49,7 @@ export const Login = () => {
   return (
     <div className="bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center overflow-hidden relative">
       <div className="bg-transparent p-8 rounded-lg border border-gray-600 shadow-md relative z-10 max-w-md w-full transition duration-300 ease-in-out transform hover:scale-102 hover:shadow-lg hover:border-gray-500">
-        <h2 className=" text-3xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400">
+        <h2 className=" text-3xl pb-3 font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400">
           Login
         </h2>
         {error && (

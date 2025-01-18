@@ -131,12 +131,11 @@ const Trade = () => {
     }
   };
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-950 text-white">
       <Navbar />
-      <div className="justify-center item-center max-h-screen mt-2 mx-auto pt-[68px] px-4 py-8">
+      <div className="justify-center item-center max-h-screen mt-6 mx-auto pt-[68px] px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - Market News */}
-          <div className="lg:col-span-3 bg-gray-900 rounded-lg p-6 h-[calc(100vh-200px)] overflow-y-auto shadow-lg scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
+          <div className="lg:col-span-3 bg-gray-900 rounded-2xl p-6 h-[600px] overflow-y-auto shadow-lg ">
             <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">
               Market News
             </h2>
@@ -265,7 +264,7 @@ const Trade = () => {
           </div>
 
           {/* Right Sidebar - Stock Details */}
-          <div className="lg:col-span-4 bg-gray-900 max-h-[498px] overflow-y-auto rounded-2xl shadow-md relative z-10 w-full">
+          <div className="lg:col-span-4 bg-gray-900 max-h-[600px] overflow-y-auto rounded-2xl shadow-md relative z-10 w-full">
             {/* <h2 className="text-xl font-bold mb-4">Stock Details</h2> */}
             <table className="bg-transparent rounded-2xl text-white w-full border-separate border-spacing-0">
               <thead>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../Components/Navbar/Navbar";
 import { Chart as ChartJS } from "chart.js/auto";
-import { Pie } from "react-chartjs-2";
+import { Bar, Pie } from "react-chartjs-2";
 
 const Portfolio = () => {
   const [stockinfo, setStockInfo] = useState([]);
@@ -9,12 +9,17 @@ const Portfolio = () => {
   const [error, setError] = useState(null);
   const [tinfo, settinfo] = useState([]); // Transaction info
   const [ttype, settype] = useState("");
+  const [totprof, settotprof] = useState([]); //for total profit
+  const [comporf, setcomprof] = useState([]); //for company comparison
+  const [stat, setstat] = useState(""); //for profit or loss status
 
   useEffect(() => {
     fetchBalance();
     fetchStockInfo();
     fetchTransactionInfo(); // Fetch transaction data on component mount
-    fetchTransactiontype();
+    fetchTotalprofit();
+    fetchComprof();
+    fetchProfitloss();
   }, [ttype]);
 
   const fetchBalance = async () => {
@@ -63,31 +68,48 @@ const Portfolio = () => {
     }
   };
 
-  const fetchTransactiontype = async () => {
-    if (!ttype) return;
-
+  const fetchTotalprofit = async () => {
     try {
-      const result = await fetch(
-        `http://localhost:4000/api/know_transaction/${ttype}`
-      );
-      if (!result.ok)
-        throw new Error(`Failed to fetch transaction type: ${ttype}`);
+      const result = await fetch(`http://localhost:4000/api/profitloss`);
+      if (!result.ok) throw new Error(`Failed to fetch profit/loss history`);
 
       const data = await result.json();
 
-      if (!data.rows || !Array.isArray(data.rows) || data.rows.length === 0) {
-        throw new Error("No transaction data available for this type.");
-      }
-
-      settinfo(data.rows);
+      settotprof(data);
+      console.log(data);
     } catch (error) {
-      console.error("Error in fetching history:", error);
-      setError("Failed to load history");
+      console.error("Error in fetching profit loss", error);
+      setError("Failed to get total profit");
     }
   };
 
+  const fetchComprof = async () => {
+    try {
+      const result = await fetch(
+        `http://localhost:4000/api/particularprofitloss`
+      );
+      if (!result.ok) throw new Error("Failed to get company-wise data");
+
+      const data = await result.json();
+      setcomprof(data);
+    } catch (error) {
+      console.error("Error fetching company-wise data:", error);
+    }
+  };
+
+  const fetchProfitloss = async () => {
+    try {
+      const result = await fetch(`http://localhost:4000/api/profitloss`);
+      if (!result.ok) throw new Error("failed to get proft loss statemnt");
+
+      const data = await result.json();
+      console.log(data);
+      settotprof(data);
+    } catch (error) {}
+  };
+
   return (
-    <div className="grid grid-cols-2 mt-[68px] grid-rows-2 min-h-screen bg-gray-900 gap-4 p-4">
+    <div className="grid grid-cols-2 mt-[68px] grid-rows-2 min-h-screen bg-gradient-to-br from-blue-900 to-blue-950 gap-2 p-4">
       <Navbar />
       {/* Top-Left Div (Pie Chart Card) */}
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg relative border-2 border-blue-500">
@@ -111,6 +133,12 @@ const Portfolio = () => {
                       "#4BC0C0",
                       "#9966FF",
                       "#FF9F40",
+                      "#FFB3E6",
+                      "#FF6666",
+                      "#33CC99",
+                      "#6600FF",
+                      "#FF3399",
+                      "#33CCFF",
                     ],
                     hoverOffset: 4,
                   },
@@ -136,16 +164,66 @@ const Portfolio = () => {
       </div>
 
       {/* Top-Right Div (Add your content here) */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-lg border-2 border-blue-500">
-        <h2 className="text-2xl font-bold text-white text-center mb-4 underline">
-          Additional Information
-        </h2>
-        {/* Add any content you want for the top-right div */}
-        <p className="text-white">Additional content goes here.</p>
+      <div className="bg-gray-800 p-6 rounded-lg shadow-lg relative border-2 border-blue-500">
+        <div className="min-h-[450px] flex flex-col justify-center">
+          <div className="text-white mb-4 text-center">
+            <span className="font-bold">Status:</span>{" "}
+            <span
+              className={`font-bold ${
+                totprof.status === "Profit" ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {totprof.status || "N/A"}{" "}
+            </span>
+            <br />
+            <span className="font-bold">Amount:</span>{" "}
+            {totprof.amount ? `$${totprof.amount.toFixed(2)}` : "N/A"}
+          </div>
+
+          {comporf && comporf.length > 0 ? (
+            <div className="flex-grow">
+              <Bar
+                data={{
+                  labels: comporf.map((cmp) => cmp.company_name),
+                  datasets: [
+                    {
+                      label: "Stock Price",
+                      data: comporf.map((cmp) => cmp.stock_price),
+                      backgroundColor: "#FF5733", // Stock Price color
+                      hoverOffset: 9,
+                    },
+                    {
+                      label: "Average Price",
+                      data: comporf.map((cmp) => cmp.average_price),
+                      backgroundColor: "#4CAF50", // Average Price color
+                      hoverOffset: 9,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: "right",
+                      labels: {
+                        color: "#fff", // Text color for legend items
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          ) : (
+            <p className="text-white text-center">
+              No data available for company comparison.
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Bottom Div (Transaction Table) */}
-      <div className="bg-gray-800 p-6 rounded-lg border-2 col-span-2">
+      <div className="border-blue-500 bg-gray-800 p-6 rounded-lg border-2 col-span-2">
         <h2 className="text-xl font-bold text-white mb-4">
           Transaction History
         </h2>
@@ -159,7 +237,7 @@ const Portfolio = () => {
                     value={ttype || ""}
                     onChange={(e) => settype(e.target.value)}
                   >
-                    <option value="">Default</option>
+                    <option value="">Transaction</option>
                     <option value="Buy_stock">Buy Stock</option>
                     <option value="Sell_stock">Sell Stock</option>
                     <option value="deposited">Deposited</option>

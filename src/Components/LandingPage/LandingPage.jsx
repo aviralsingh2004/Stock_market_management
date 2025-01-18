@@ -15,7 +15,7 @@ export const LandingPage = () => {
 
   return (
     <div className="bg-gradient-to-b from-gray-900 to-black h-screen flex flex-col items-center justify-center">
-      <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-8 transition duration-300 ease-in-out transform hover:text-gray-200">
+      <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-300 to-gray-400 text-4xl md:text-5xl lg:text-6xl font-bold text-center mb-8 pb-3 transition duration-300 ease-in-out transform hover:text-gray-200">
         Welcome to your Stock Management Application
       </h1>
       <div className="flex space-x-8">

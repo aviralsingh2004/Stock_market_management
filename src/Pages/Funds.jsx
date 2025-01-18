@@ -95,14 +95,14 @@ export const Funds = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="w-full mx-auto p-6 bg-gray-900 rounded-xl shadow-lg space-y-6">
+      <div className="flex bg-gradient-to-r from-blue-900 to-blue-950 items-center justify-center min-h-screen">
+        <div className="w-full  mx-auto p-6  bg-gray-900   shadow-lg space-y-6">
           <h2 className="text-2xl font-bold text-white mb-6 text-center">
             Wallet
           </h2>
 
           {/* Display balance */}
-          <div className="text-center text-white mb-4">
+          <div className="  text-center text-white mb-4">
             <p className="text-lg">Current Balance: ${balance}</p>
           </div>
 
@@ -120,7 +120,7 @@ export const Funds = () => {
 
           {/* Add Funds Form */}
           <form className="space-y-4" onSubmit={handleAdd}>
-            <div className="space-y-2">
+            <div className="space-y-2 ">
               <label
                 htmlFor="add"
                 className="block text-sm font-medium text-white"

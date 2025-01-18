@@ -38,7 +38,7 @@ const con = new Client({
   host: "localhost",
   user: "postgres",
   port: process.env.DB_PORT,
-  password: process.env.PASSWORD, // Replace with your actual password
+  password: "yash2002@annu", // Replace with your actual password
   database: process.env.DATABASE,
 });
 
@@ -79,20 +79,20 @@ const groq = new Groq({
 let emailid = process.env.EMAILID;
 let user_id = process.env.USER_ID;
 // Path to the .env file
-const envFilePath = '.env';
+const envFilePath = ".env";
 
 // Helper function to get the current date in YYYY-MM-DD format
-const getCurrentDate = () => new Date().toISOString().split('T')[0];
+const getCurrentDate = () => new Date().toISOString().split("T")[0];
 
 // Function to update the date in the .env file
 const updateEnvDate = async (newDate) => {
-  const envContent = fs.readFileSync(envFilePath, 'utf-8');
+  const envContent = fs.readFileSync(envFilePath, "utf-8");
   const updatedContent = envContent.replace(
     /LAST_CHECKED_DATE=.*/,
     `LAST_CHECKED_DATE=${newDate}`
   );
   // console.log(newDate);
-  fs.writeFileSync(envFilePath, updatedContent, 'utf-8');
+  fs.writeFileSync(envFilePath, updatedContent, "utf-8");
   console.log(`Updated LAST_CHECKED_DATE to ${newDate} in .env file.`);
 };
 const checkDateChange = () => {
@@ -102,12 +102,12 @@ const checkDateChange = () => {
   if (lastCheckedDate !== currentDate) {
     console.log(`Date has changed from ${lastCheckedDate} to ${currentDate}`);
     // Perform your date-change logic here
-    console.log('Executing logic for the new date...');
+    console.log("Executing logic for the new date...");
     scrapeAndStoreStockData();
     // Update the .env file with the new date
     updateEnvDate(currentDate);
   } else {
-    console.log('Date has not changed. All good!');
+    console.log("Date has not changed. All good!");
   }
 };
 checkDateChange();
@@ -173,6 +173,14 @@ app.post("/signUpPost", async (req, res) => {
       console.error("Missing required fields");
       return res.status(400).json({
         error: "All fields (firstName, email, password) are required",
+      });
+    }
+    const nameRegex = /^[A-Za-z]+$/;
+    if (!nameRegex.test(firstName) || !nameRegex.test(lastName)) {
+      console.error("First name and last name should only contain alphabets");
+      return res.status(400).json({
+        error:
+          "First name and last name should only contain alphabets (no spaces or special characters)",
       });
     }
 
@@ -909,14 +917,14 @@ app.post("/api/processPrompt", async (req, res) => {
   }
 });
 //api endpoint for calculating profit and loss
-app.get("/api/profitloss",async(req,res)=>{
-  try{
+app.get("/api/profitloss", async (req, res) => {
+  try {
     const query1 = `
         SELECT SUM(quantity * average_price) AS net_investment
         FROM stocks
         WHERE user_id = $1
     `;
-    const response1 = await con.query(query1,[user_id]);
+    const response1 = await con.query(query1, [user_id]);
     const netinvested = response1.rows[0].net_investment;
     // console.log(netinvested);
     const query2 = `
@@ -924,37 +932,42 @@ app.get("/api/profitloss",async(req,res)=>{
       FROM companies,stocks 
       WHERE stocks.company_id = companies.company_id AND user_id = $1
     `;
-    const response2 = await con.query(query2,[user_id]);
+    const response2 = await con.query(query2, [user_id]);
     const netrecieved = response2.rows[0].net_recieved;
-    if(netrecieved > netinvested){
+    if (netrecieved > netinvested) {
       res.json({
-        status:"profit",
-        amount:(netrecieved-netinvested).toFixed(2),
-      })
+        status: "Profit",
+        amount: parseFloat((netrecieved - netinvested).toFixed(2)),
+      });
+    } else {
+      res.json({
+        status: "Loss",
+        amount: parseFloat((netinvested - netrecieved).toFixed(2)),
+      });
     }
-    res.json({
-      status:"loss",
-      amount:(netinvested-netrecieved).toFixed(2),
-    });
-  } catch(error){
-    console.error({error:"Error in fetching profit/loss"});
-    res.status(500).json({error:"Error in fetching profit/loss"});
+  } catch (error) {
+    console.error({ error: "Error in fetching profit/loss" });
+    res.status(500).json({ error: "Error in fetching profit/loss" });
   }
 });
 //api endpoint for finding profit/loss for particular companies
-app.get("/api/particularprofitloss",async(req,res)=>{
-  try{
-    const query1=`
+app.get("/api/particularprofitloss", async (req, res) => {
+  try {
+    const query1 = `
       SELECT stocks.company_id ,stocks.company_name,stocks.average_price,companies.stock_price,stocks.quantity
       FROM stocks, companies
       WHERE stocks.quantity > 0 AND user_id = $1 AND stocks.company_id = companies.company_id;
     `;
-    const response1 = await con.query(query1,[user_id]);
-    // console.log(response1.rows);
+    const response1 = await con.query(query1, [user_id]);
+    console.log(response1.rows[0]);
     res.json(response1.rows);
-  }catch(error){
-    console.error({error:"Error in fetching particular company profit/loss"});
-    res.status(500).json({error:"Error in fetching particular company profit/loss"});
+  } catch (error) {
+    console.error({
+      error: "Error in fetching particular company profit/loss",
+    });
+    res
+      .status(500)
+      .json({ error: "Error in fetching particular company profit/loss" });
   }
 });
 //api endpoint for historical symbol

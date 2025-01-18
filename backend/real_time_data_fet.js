@@ -7,9 +7,9 @@ import puppeteer from "puppeteer";
 const dbConfig = {
   host: "localhost",
   user: "postgres",
-  port: 5000,
-  password: "Aviral@2002", // Replace with your actual password
-  database: "trade",
+  port: process.env.DB_PORT || 5432,
+  password: "yash2002@annu", // Replace with your actual password
+  database: "stock_trade",
 };
 
 // Function to get random number for total shares
@@ -165,13 +165,13 @@ async function scrapeAndStoreStockData() {
       let stock_price = parseFloat(stock.price);
       // const total_shares = getRandomShares(1000, 10000);
 
-    const query = `
+      const query = `
   WITH existing_shares AS (
     SELECT total_shares 
-    FROM Companies 
+    FROM companies 
     WHERE ticker_symbol = $2
   )
-  INSERT INTO Companies (company_name, ticker_symbol, stock_price, total_shares)
+  INSERT INTO companies (company_name, ticker_symbol, stock_price, total_shares)
   VALUES (
     $1, 
     $2, 
@@ -186,12 +186,12 @@ async function scrapeAndStoreStockData() {
 
       const defaultTotalShares = 5000; // or whatever default value you want for new companies
 
-await client.query(query, [
-  company_name,
-  ticker_symbol,
-  stock_price,
-  defaultTotalShares  // This will only be used for new insertions, not updates
-]);
+      await client.query(query, [
+        company_name,
+        ticker_symbol,
+        stock_price,
+        defaultTotalShares, // This will only be used for new insertions, not updates
+      ]);
       console.log(`Inserted/Updated ${company_name} (${ticker_symbol})`);
     }
   } catch (error) {

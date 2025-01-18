@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import './home.css';
-import Navbar from '../Components/Navbar/Navbar';
-import { Line } from 'react-chartjs-2';
+import React, { useState, useEffect, useRef } from "react";
+import "./home.css";
+import Navbar from "../Components/Navbar/Navbar";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -11,7 +11,7 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
 // Register ChartJS components
 ChartJS.register(
@@ -28,7 +28,7 @@ export const Home = () => {
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [historicalData, setHistoricalData] = useState(null);
   const chartRef = useRef(null); // Ref for chart container
@@ -39,43 +39,45 @@ export const Home = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/companies');
+      const response = await fetch("http://localhost:4000/api/companies");
       if (!response.ok) {
-        throw new Error('Failed to fetch data');
+        throw new Error("Failed to fetch data");
       }
       const data = await response.json();
       setCompanies(data);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching companies:', err);
-      setError('Failed to load company data');
+      console.error("Error fetching companies:", err);
+      setError("Failed to load company data");
       setLoading(false);
     }
   };
 
   const fetchHistoricalData = async (symbol) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/historical/${symbol}`);
+      const response = await fetch(
+        `http://localhost:4000/api/historical/${symbol}`
+      );
       if (!response.ok) {
-        throw new Error('Failed to fetch historical data');
+        throw new Error("Failed to fetch historical data");
       }
       const data = await response.json();
       setHistoricalData(data);
       setSelectedCompany(symbol);
       scrollToChart(); // Scroll to the chart after selecting a company
     } catch (err) {
-      console.error('Error fetching historical data:', err);
-      setError('Failed to load historical data');
+      console.error("Error fetching historical data:", err);
+      setError("Failed to load historical data");
     }
   };
 
   const scrollToChart = () => {
-    chartRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chartRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
-    if (e.target.value.trim() !== '') {
+    if (e.target.value.trim() !== "") {
       setHistoricalData(null); // Hide chart during search
       setSelectedCompany(null);
     }
@@ -91,13 +93,15 @@ export const Home = () => {
 
   const chartData = historicalData
     ? {
-        labels: historicalData.map((data) => new Date(data.date).toLocaleDateString()),
+        labels: historicalData.map((data) =>
+          new Date(data.date).toLocaleDateString()
+        ),
         datasets: [
           {
             label: `${selectedCompany} Stock Price`,
             data: historicalData.map((data) => data.close),
             fill: true,
-            borderColor: 'rgb(75, 192, 192)',
+            borderColor: "rgb(75, 192, 192)",
             tension: 0.1,
           },
         ],
@@ -108,11 +112,11 @@ export const Home = () => {
     responsive: true,
     plugins: {
       legend: {
-        position: 'top',
+        position: "top",
       },
       title: {
         display: true,
-        text: 'Stock Price History',
+        text: "Stock Price History",
       },
     },
     scales: {
@@ -125,7 +129,7 @@ export const Home = () => {
   if (loading) return <div className="bg-transparent loading">Loading...</div>;
   if (error) return <div className="error">{error}</div>;
 
-   return (
+  return (
     <div className="bg-gradient-to-br from-blue-900 to-blue-950">
       <Navbar />
       <div className="pt-[68px] mt-2 z-0">
@@ -166,15 +170,27 @@ export const Home = () => {
                 <tbody className="divide-y divide-gray-800">
                   {filteredCompanies.map((company, index) => (
                     <tr key={index} className="hover:bg-gray-900/50">
-                      <td className="px-6 py-4 text-blue-400">{company.symbol}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-blue-400 text-left">
+                        {company.symbol}
+                      </td>
+                      <td className="px-6 py-4 text-left">
                         {new Date(company.date).toLocaleDateString()}
                       </td>
-                      <td className="px-6 py-4 text-white text-right">{company.open.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-white text-right">{company.high.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-white text-right">{company.low.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-white text-right">{company.close.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-white text-right">{company.volume.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-white text-right">
+                        {company.open.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-white text-right">
+                        {company.high.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-white text-right">
+                        {company.low.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-white text-right">
+                        {company.close.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 text-white text-right">
+                        {company.volume.toLocaleString()}
+                      </td>
                       <td className="px-6 py-4 text-white text-center">
                         <button
                           className="bg-transparent text-white border border-gray-600 py-1 px-4 rounded-lg hover:bg-white hover:text-black transition duration-200"
