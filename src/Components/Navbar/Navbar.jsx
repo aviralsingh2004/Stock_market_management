@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Navbar as MTNavbar,
   MobileNav,
@@ -11,12 +11,13 @@ import {
 export const Navbar = () => {
   const [menu, setMenu] = useState("home");
   const [openNav, setOpenNav] = useState(false);
-  const [userName,setUserName] = useState("");
+  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
+  const location = useLocation(); // Hook to get current path
 
   // Handle responsive behavior
   useEffect(() => {
-    fetchuser();
+    fetchUser();
     const handleResize = () => {
       if (window.innerWidth >= 960) {
         setOpenNav(false);
@@ -30,25 +31,29 @@ export const Navbar = () => {
     setMenu(path);
     navigate(`/${path}`);
   };
-  const fetchuser = async() =>{
-    try{
+
+  const fetchUser = async () => {
+    try {
       const response = await fetch(`http://localhost:4000/api/username`);
-      if(!response.ok){
-        throw new Error('Failed to fetch username');
+      if (!response.ok) {
+        throw new Error("Failed to fetch username");
       }
       const data = await response.json();
       setUserName(data);
-    }catch(err){
-      console.error('Error fetching username:',err);
+    } catch (err) {
+      console.error("Error fetching username:", err);
     }
   };
+
   const navList = (
     <ul className="mt-2 mb-4 flex flex-col gap-4 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6 text-white">
       <li>
         <button
           onClick={() => handleNavigate("home")}
           className={`${
-            menu === "home" ? "text-blue-600" : "hover:text-blue-500"
+            location.pathname === "/home"
+              ? "text-blue-600"
+              : "hover:text-blue-500"
           } text-sm font-semibold transition duration-300`}
         >
           Home
@@ -58,7 +63,9 @@ export const Navbar = () => {
         <button
           onClick={() => handleNavigate("portfolio")}
           className={`${
-            menu === "portfolio" ? "text-blue-600" : "hover:text-blue-500"
+            location.pathname === "/portfolio"
+              ? "text-blue-600"
+              : "hover:text-blue-500"
           } text-sm font-semibold transition duration-300`}
         >
           Portfolio
@@ -68,7 +75,9 @@ export const Navbar = () => {
         <button
           onClick={() => handleNavigate("trade")}
           className={`${
-            menu === "trade" ? "text-blue-600" : "hover:text-blue-500"
+            location.pathname === "/trade"
+              ? "text-blue-600"
+              : "hover:text-blue-500"
           } text-sm font-semibold transition duration-300`}
         >
           Trade
@@ -78,7 +87,9 @@ export const Navbar = () => {
         <button
           onClick={() => handleNavigate("funds")}
           className={`${
-            menu === "funds" ? "text-blue-600" : "hover:text-blue-500"
+            location.pathname === "/funds"
+              ? "text-blue-600"
+              : "hover:text-blue-500"
           } text-sm font-semibold transition duration-300`}
         >
           Funds
@@ -88,7 +99,9 @@ export const Navbar = () => {
         <button
           onClick={() => handleNavigate("chatbot")}
           className={`${
-            menu === "chatbot" ? "text-blue-600" : "hover:text-blue-500"
+            location.pathname === "/chatbot"
+              ? "text-blue-600"
+              : "hover:text-blue-500"
           } text-sm font-semibold transition duration-300`}
         >
           DataBridgeAI
@@ -96,9 +109,11 @@ export const Navbar = () => {
       </li>
     </ul>
   );
+
   const handleClick = () => {
     navigate("/");
-  }
+  };
+
   return (
     <MTNavbar className="fixed top-0 left-0 w-full z-10 bg-gradient-to-r from-blue-950 via-blue-950 to-black px-4 py-3 lg:px-8 lg:py-4 shadow-lg">
       <div className="flex items-center justify-between">
@@ -107,7 +122,7 @@ export const Navbar = () => {
           href="#"
           className="mr-4 text-lg font-bold text-white cursor-pointer"
         >
-         Hello {userName}
+          Hello {userName}
         </Typography>
         <div className="hidden lg:flex lg:items-center lg:gap-4">{navList}</div>
         <div className="hidden lg:flex lg:items-center lg:gap-2">
@@ -116,7 +131,7 @@ export const Navbar = () => {
             className="rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
             onClick={handleClick}
           >
-            log out
+            Log out
           </Button>
         </div>
         <IconButton

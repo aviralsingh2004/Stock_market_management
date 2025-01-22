@@ -267,7 +267,7 @@ const Portfolio = () => {
                       <td className="p-3 text-left text-white">
                         {trans.company_name || "N/A"}
                       </td>
-                      <td className="p-3 text-left text-white">
+                      <td className="p-3 text-center text-white">
                         {trans.quantity || "-"}
                       </td>
                       <td className="p-3 text-left text-white">
