@@ -3,15 +3,17 @@
 import pkg from "pg";
 const { Client } = pkg;
 import puppeteer from "puppeteer";
+import dotenv from "dotenv";
+dotenv.config();
 // PostgreSQL configuration
 const dbConfig = {
   host: "localhost",
   user: "postgres",
-  port: process.env.DB_PORT || 5432,
-  password: "yash2002@annu", // Replace with your actual password
-  database: "stock_trade",
+  port: process.env.DB_PORT || 5000,
+  password: process.env.PASSWORD, // Replace with your actual password
+  database: process.env.DATABASE,
 };
-
+console.log(process.env.DATABASE);
 // Function to get random number for total shares
 // Utility function to generate random shares
 // function getRandomShares(min, max) {

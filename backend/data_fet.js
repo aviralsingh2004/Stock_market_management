@@ -2,18 +2,19 @@ import pkg from "pg"; // Import the default export from 'pg'
 const { Client } = pkg; // Extract Client from the imported package
 
 import axios from "axios";
-
+import dotenv from "dotenv";
+dotenv.config();
 // PostgreSQL database configuration
 const dbConfig = {
   host: "localhost",
   user: "postgres",
-  port: 5432,
-  password: " ", // Replace with your actual password
-  database: " ",
+  port: process.env.DB_PORT,
+  password: process.env.PASSWORD, // Replace with your actual password
+  database: process.env.DATABASE,
 };
 
 // FMP API Key (Replace with your actual API key from Financial Modeling Prep)
-const fmpApiKey = " ";
+const fmpApiKey = "PX3FdvqcvFqwPSBptyqGLb6B0noyxkGQ";
 
 // List of company symbols
 const companySymbols = [

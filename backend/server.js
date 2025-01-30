@@ -38,10 +38,9 @@ const con = new Client({
   host: "localhost",
   user: "postgres",
   port: process.env.DB_PORT,
-  password: "yash2002@annu", // Replace with your actual password
+  password: process.env.PASSWORD, // Replace with your actual password
   database: process.env.DATABASE,
 });
-
 // Connect to the database
 con
   .connect()
@@ -464,18 +463,17 @@ app.post("/api/trade", async (req, res) => {
     const quantity = parseInt(quantity1);
     // Query for user's balance
     const getUserBalance = `
-      SELECT total_balance 
-      FROM users
-      WHERE user_id = $1;
+    SELECT total_balance 
+    FROM users
+    WHERE user_id = $1;
     `;
-
+    
     // Query for company details
     const getCompanyDetails = `
       SELECT company_id, ticker_symbol, stock_price, total_shares
       FROM companies
       WHERE company_name = $1;
     `;
-
     // Execute the queries
     const userBalance = await con.query(getUserBalance, [user_id]);
     const companyDetails = await con.query(getCompanyDetails, [company_name]);
@@ -510,7 +508,7 @@ app.post("/api/trade", async (req, res) => {
         INSERT INTO transactions (user_id,company_id,transaction_type,quantity,total_amount,transaction_date)
         VALUES($1, $2, $3, $4,$5,$6)
         `;
-
+        
         const values = [
           user_id,
           company_id,
@@ -531,7 +529,7 @@ app.post("/api/trade", async (req, res) => {
         quantity = stocks.quantity + $3,
         average_price = ((stocks.average_price * stocks.quantity) + ($3 *   $5)) / (stocks.quantity + $3);
         `;
-        console.log(user_id);
+        // console.log(user_id);
         await con.query(stock_query, [
           user_id,
           company_id,
@@ -539,6 +537,7 @@ app.post("/api/trade", async (req, res) => {
           company_name,
           stock_price,
         ]);
+        console.log("reached here");
         console.log(userTotalBalance);
         res.json(userTotalBalance);
       } else {
