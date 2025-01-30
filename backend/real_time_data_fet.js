@@ -8,8 +8,8 @@ const dbConfig = {
   host: "localhost",
   user: "postgres",
   port: process.env.DB_PORT || 5432,
-  password: "yash2002@annu", // Replace with your actual password
-  database: "stock_trade",
+  password: process.env.PASSWORD, // Replace with your actual password
+  database: process.env.DATABASE,
 };
 
 // Function to get random number for total shares

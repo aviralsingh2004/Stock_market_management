@@ -38,7 +38,7 @@ const con = new Client({
   host: "localhost",
   user: "postgres",
   port: process.env.DB_PORT,
-  password: "yash2002@annu", // Replace with your actual password
+  password: process.env.PASSWORD, // Replace with your actual password
   database: process.env.DATABASE,
 });
 

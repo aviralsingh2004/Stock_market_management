@@ -1,7 +1,22 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../Components/Navbar/Navbar";
-import { Chart as ChartJS } from "chart.js/auto";
+
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  Title,
+  CategoryScale,
+  BarElement,
+  LinearScale,
+  PointElement,
+  LineElement,
+} from "chart.js";
 import { Bar, Pie } from "react-chartjs-2";
+
+// Register required elements
+ChartJS.register(BarElement, ArcElement, Tooltip, Legend);
 
 const Portfolio = () => {
   const [stockinfo, setStockInfo] = useState([]);

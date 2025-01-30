@@ -8,8 +8,8 @@ const dbConfig = {
   host: "localhost",
   user: "postgres",
   port: 5432,
-  password: " ", // Replace with your actual password
-  database: " ",
+  password: process.env.PASSWORD, // Replace with your actual password
+  database: process.env.DATABASE,
 };
 
 // FMP API Key (Replace with your actual API key from Financial Modeling Prep)
