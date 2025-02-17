@@ -14,7 +14,7 @@ const dbConfig = {
 };
 
 // FMP API Key (Replace with your actual API key from Financial Modeling Prep)
-const fmpApiKey = "PX3FdvqcvFqwPSBptyqGLb6B0noyxkGQ";
+const fmpApiKey = process.env.FMP_API_KEY;
 
 // List of company symbols
 const companySymbols = [
