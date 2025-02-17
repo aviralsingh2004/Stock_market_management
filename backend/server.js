@@ -13,6 +13,8 @@ import bcrypt from "bcrypt";
 import cors from "cors";
 import { error } from "console";
 import { stringify } from "querystring";
+import { exec } from "child_process";
+import PDFDocument from 'pdfkit';
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -657,7 +659,7 @@ const scrapeNews = async () => {
 app.get("/api/current_news", async (req, res) => {
   try {
     const news = await scrapeNews();
-    console.log("news extracted successfully");
+    // console.log("news extracted successfully");
     res.json(news);
   } catch (err) {
     console.error("Error fetching in real time news:", err);
@@ -991,6 +993,115 @@ app.get("/api/historical/:symbol", async (req, res) => {
   } catch (err) {
     console.error("Error fetching historical data:", err);
     res.status(500).json({ error: "Error fetching historical data" });
+  }
+});
+
+// API endpoint for generating transaction report
+app.get("/api/generate-report", async (req, res) => {
+  try {
+    // Fetch transaction data
+    const transactionQuery = `
+      SELECT 
+        t.transaction_type,
+        c.company_name,
+        t.quantity,
+        t.total_amount as money_involved,
+        to_char(t.transaction_date, 'DD/MM/YYYY') as formatted_date
+      FROM transactions t
+      LEFT JOIN companies c ON t.company_id = c.company_id
+      WHERE t.user_id = $1
+      ORDER BY t.transaction_date DESC
+    `;
+
+    const stockQuery = `
+      SELECT 
+        s.company_name,
+        s.quantity,
+        s.average_price    
+      FROM stocks s
+      WHERE s.user_id = $1 AND s.quantity > 0
+    `;
+
+    const [transactionResult, stockResult] = await Promise.all([
+      con.query(transactionQuery, [user_id]),
+      con.query(stockQuery, [user_id])
+    ]);
+
+    // Create PDF document
+    const doc = new PDFDocument();
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=stock_report.pdf');
+    
+    // Pipe the PDF to the response
+    doc.pipe(res);
+
+    // Add content to PDF
+    doc.fontSize(20).text('Stock Trading Report', { align: 'center' });
+    doc.moveDown();
+    
+    // Add transaction table
+    doc.fontSize(16).text('Transaction History');
+    doc.moveDown();
+    
+    // Define table layout
+    const tableTop = 150;
+    let tableRow = tableTop;
+    
+    // Add table headers
+    doc.fontSize(12);
+    doc.text('Type', 50, tableRow);
+    doc.text('Company', 150, tableRow);
+    doc.text('Quantity', 250, tableRow);
+    doc.text('Amount', 350, tableRow);
+    doc.text('Date', 450, tableRow);
+    
+    tableRow += 20;
+
+    // Add transaction rows
+    transactionResult.rows.forEach(tx => {
+      const color = tx.transaction_type === 'Buy_stock' ? '#0000FF' : 
+                   tx.transaction_type === 'Sell_stock' ? '#FF0000' : 
+                   tx.transaction_type === 'deposited' ? '#00FF00' : '#FFA500';
+                   
+      const displayType = tx.transaction_type === 'Buy_stock' ? 'Buy' :
+                         tx.transaction_type === 'Sell_stock' ? 'Sell' :
+                         tx.transaction_type === 'deposited' ? 'Deposit' : 'Withdraw';
+
+      doc.fillColor(color).text(displayType, 50, tableRow);
+      doc.fillColor('black').text(tx.company_name || '-', 150, tableRow);
+      doc.text(tx.quantity?.toString() || '-', 250, tableRow);
+      doc.text(`$${tx.money_involved}`, 350, tableRow);
+      doc.text(tx.formatted_date, 450, tableRow);
+      
+      tableRow += 20;
+      
+      // Add new page if needed
+      if (tableRow > 700) {
+        doc.addPage();
+        tableRow = 50;
+      }
+    });
+
+    // Add current holdings
+    doc.addPage();
+    doc.fontSize(16).text('Current Holdings');
+    doc.moveDown();
+    
+    stockResult.rows.forEach(stock => {
+      doc.fontSize(12).text(
+        `${stock.company_name}: ${stock.quantity} shares at average price $${stock.average_price}`
+      );
+      doc.moveDown();
+    });
+
+    // Finalize PDF
+    doc.end();
+
+  } catch (error) {
+    console.error('Error generating report:', error);
+    res.status(500).json({ error: 'Failed to generate report' });
   }
 });
 

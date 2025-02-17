@@ -62,14 +62,21 @@ const Trade = () => {
     try {
       const response = await fetch("http://localhost:4000/api/current_news");
       if (!response.ok) throw new Error("Failed to fetch news");
+      
       const data = await response.json();
-      // console.log(data);
-
-      setNews(data);
+      
+      // Wait until data is non-empty
+      if (data && data.length > 0) {
+        setNews(data);
+      } else {
+        console.log("Waiting for news data...");
+        setTimeout(fetchNews, 3000); // Retry after 3 seconds
+      }
     } catch (err) {
       console.error("Error fetching news:", err);
     }
   };
+  
 
   const fetchparticularcompany = async (company_name, quantity1, operation) => {
     try {
