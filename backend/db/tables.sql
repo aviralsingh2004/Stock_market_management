@@ -31,14 +31,15 @@ CREATE TABLE Transactions (
     total_amount NUMERIC(15, 2) NOT NULL,
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Tracks the exact time of the transaction
 );
-CREATE TABLE MarketData (
-    market_data_id SERIAL PRIMARY KEY,
-    company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    open_price NUMERIC(10, 2) NOT NULL,
-    close_price NUMERIC(10, 2) NOT NULL,
-    high_price NUMERIC(10, 2) NOT NULL,
-    low_price NUMERIC(10, 2) NOT NULL,
-    volume INT NOT NULL,
-    UNIQUE (company_id, date)
-);
+CREATE TABLE IF NOT EXISTS market_data (
+      id SERIAL PRIMARY KEY,
+      symbol VARCHAR(10) NOT NULL,
+      date DATE NOT NULL,
+      open FLOAT,
+      high FLOAT,
+      low FLOAT,
+      close FLOAT,
+      volume BIGINT
+    );
+
+ALTER TABLE stocks ADD CONSTRAINT unique_user_company UNIQUE (user_id, company_id);
