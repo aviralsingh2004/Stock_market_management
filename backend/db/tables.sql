@@ -15,7 +15,7 @@ CREATE TABLE Companies (
 );
 CREATE TABLE Stocks (
     stock_id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES Users(user_id) ON DELETE CASCADE,
+    user_id VARCHAR(50) REFERENCES Users(user_id) ON DELETE CASCADE,
     company_id INT REFERENCES Companies(company_id) ON DELETE CASCADE,
     quantity INT NOT NULL,
     average_price NUMERIC(10, 2),
