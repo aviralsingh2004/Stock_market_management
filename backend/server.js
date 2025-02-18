@@ -348,32 +348,37 @@ app.get("/api/get_stock", async (req, res) => {
 
 //api endpoint to get transaction infromtion
 app.get("/api/get_transaction", async (req, res) => {
-  //  const user_id = req.query.user_id; // Get user_id from query parameter
-
-  // SQL query to fetch transactions with company details
+  const { startDate, endDate } = req.query;
+  
+  // SQL query to fetch transactions with company details and date filtering
   const get_transaction_query = `
     SELECT 
       t.transaction_id,
       t.user_id,
       t.company_id,
-      c.company_name, -- Fetch company name if applicable
+      c.company_name,
       t.transaction_type,
       t.quantity,
       t.total_amount,
       t.transaction_date,
       CASE 
-        WHEN t.quantity = 0 THEN t.total_amount -- For deposits/withdrawals
-        ELSE t.quantity * t.total_amount       -- For stock transactions
+        WHEN t.quantity = 0 THEN t.total_amount
+        ELSE t.quantity * t.total_amount
       END AS calculated_amount
     FROM transactions t
-    LEFT JOIN companies c ON t.company_id = c.company_id -- Include company info if applicable
+    LEFT JOIN companies c ON t.company_id = c.company_id
     WHERE t.user_id = $1
-    ORDER BY t.transaction_date DESC; -- Sort by most recent transaction
+    ${startDate && endDate ? `AND t.transaction_date BETWEEN $2 AND $3` : ''}
+    ORDER BY t.transaction_date DESC;
   `;
 
   try {
-    const result = await con.query(get_transaction_query, [user_id]);
-    // console.log("Received transaction history:", result.rows);
+    const queryParams = [user_id];
+    if (startDate && endDate) {
+      queryParams.push(startDate, endDate);
+    }
+
+    const result = await con.query(get_transaction_query, queryParams);
     res.json(result.rows);
   } catch (error) {
     console.error("Error in getting the transaction history:", error);
@@ -890,10 +895,10 @@ app.post("/api/processPrompt", async (req, res) => {
       relevantTable,
       tableContent
     );
-    console.log("Generated SQL Query:", sqlQuery);
-
+    
     // Step 5: Execute the query
     const sqlQueryTrim = sqlQuery.replace(/^```|```$/g, "").trim();
+    console.log("Generated SQL Query:", sqlQueryTrim);
     const queryResult = await con.query(sqlQueryTrim);
 
     // Step 6: Interpret results with full context

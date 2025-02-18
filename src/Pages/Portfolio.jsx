@@ -27,6 +27,9 @@ const Portfolio = () => {
   const [totprof, settotprof] = useState([]); //for total profit
   const [comporf, setcomprof] = useState([]); //for company comparison
   const [stat, setstat] = useState(""); //for profit or loss status
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   useEffect(() => {
     fetchBalance();
     fetchStockInfo();
@@ -34,7 +37,7 @@ const Portfolio = () => {
     fetchTotalprofit();
     fetchComprof();
     fetchProfitloss();
-  }, [ttype]);
+  }, [ttype, startDate, endDate]);
 
   const fetchBalance = async () => {
     try {
@@ -91,7 +94,14 @@ const Portfolio = () => {
 
   const fetchTransactionInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/get_transaction");
+      let url = "http://localhost:4000/api/get_transaction";
+      
+      // Add date filters to URL if both dates are selected
+      if (startDate && endDate) {
+        url += `?startDate=${startDate}&endDate=${endDate}`;
+      }
+      
+      const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to get transaction record");
       const data = await response.json();
       settinfo(
@@ -285,9 +295,29 @@ const Portfolio = () => {
 
       {/* Bottom Div (Transaction Table) */}
       <div className="border-blue-500 bg-gray-800 p-6 rounded-lg border-2 col-span-2">
-        <h2 className="text-xl font-bold text-white mb-4">
-          Transaction History
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-white">Transaction History</h2>
+          <div className="flex gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-white">From:</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="bg-gray-700 text-white p-2 rounded-md"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-white">To:</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="bg-gray-700 text-white p-2 rounded-md"
+              />
+            </div>
+          </div>
+        </div>
         <div className="overflow-y-auto max-h-[50vh]">
           <table className="bg-gradient-to-r from-blue-950 to-black rounded-2xl text-white w-full border-separate border-spacing-0">
             <thead>
