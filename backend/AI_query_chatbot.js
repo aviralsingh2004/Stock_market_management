@@ -52,7 +52,7 @@ const getGroqChatCompletion = async (userPrompt) => {
         content: userPrompt + " Return only the response without explanation.",
       },
     ],
-    model: "llama3-70b-8192", // Replace with the appropriate model, if necessary
+    model: "groq/compound-mini", // Replace with the appropriate model, if necessary
     temperature: 0.2,
     max_tokens: 512,
     top_p: 1,
@@ -93,7 +93,7 @@ export const main = async () => {
             " Interpret and explain this database output in 2-3 sentences.",
         },
       ],
-      model: "llama3-70b-8192", // Replace with the appropriate model, if necessary
+      model: "groq/compound-mini", // Replace with the appropriate model, if necessary
       temperature: 0.2,
       max_tokens: 150, // Limit output to ensure a concise response
       top_p: 1,

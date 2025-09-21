@@ -19,22 +19,27 @@ const ChatInterface = () => {
   const processPrompt = async (prompt) => {
     let response;
     try {
-      response = await fetch("http://localhost:4000/api/processPrompt", {
+      console.log("Sending prompt:", prompt);
+      response = await fetch("http://localhost:4000/api/ai/process", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for session management
         body: JSON.stringify({ prompt }),
       });
 
+      console.log("Response status:", response.status);
+      
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      return data.response;
+      console.log("Response data:", data);
+      return data.interpretation || data.response || "No response available";
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error in processPrompt:", error);
       return "This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.";
     }
   };
@@ -50,6 +55,7 @@ const ChatInterface = () => {
 
     try {
       const response = await processPrompt(userMessage);
+      console.log("AI Response received:", response);
       setMessages((prev) => [
         ...prev,
         {
@@ -58,6 +64,7 @@ const ChatInterface = () => {
         },
       ]);
     } catch (error) {
+      console.error("Error in handleSubmit:", error);
       setMessages((prev) => [
         ...prev,
         {
@@ -90,7 +97,10 @@ const ChatInterface = () => {
             }`}
           >
             <div className="flex-1">
-              {message.role === "assistant" && message.content.query && (
+              {message.role === "assistant" && 
+               typeof message.content === "object" && 
+               message.content && 
+               message.content.query && (
                 <div className="mb-2">
                   <p className="text-gray-400 text-sm">Generated Query:</p>
                   <code className="block bg-gray-900 p-2 rounded mt-1 text-green-400">
@@ -101,7 +111,7 @@ const ChatInterface = () => {
               <p className="text-white">
                 {typeof message.content === "string"
                   ? message.content
-                  : message.content.response}
+                  : (message.content?.response || JSON.stringify(message.content) || "No response")}
               </p>
             </div>
           </div>

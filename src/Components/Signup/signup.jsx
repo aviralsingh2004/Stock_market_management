@@ -23,11 +23,12 @@ export const Signup = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:4000/signUpPost", {
+      const response = await fetch("http://localhost:4000/api/auth/signup", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for session management
         body: JSON.stringify(formData),
       });
 

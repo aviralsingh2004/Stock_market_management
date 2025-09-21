@@ -39,7 +39,9 @@ export const Home = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/companies");
+      const response = await fetch("http://localhost:4000/api/market/companies", {
+        credentials: "include", // Include cookies for session management
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -56,7 +58,10 @@ export const Home = () => {
   const fetchHistoricalData = async (symbol) => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/historical/${symbol}`
+        `http://localhost:4000/api/market/historical/${symbol}`,
+        {
+          credentials: "include"
+        }
       );
       if (!response.ok) {
         throw new Error("Failed to fetch historical data");

@@ -22,11 +22,12 @@ export const Login = () => {
     console.log("Attempting to send login data:", formData);
 
     try {
-      const response = await fetch("http://localhost:4000/formPost", {
+      const response = await fetch("http://localhost:4000/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for session management
         body: JSON.stringify(formData),
       });
 

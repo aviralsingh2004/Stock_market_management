@@ -34,7 +34,10 @@ export const Navbar = () => {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/username`);
+      const response = await fetch(`http://localhost:4000/api/users/username`, {
+        method: "GET",
+        credentials: "include", // Include cookies for session management
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch username");
       }

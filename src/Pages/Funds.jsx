@@ -14,8 +14,9 @@ export const Funds = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/user/balance", {
+      const response = await fetch("http://localhost:4000/api/users/balance", {
         method: "GET",
+        credentials: "include", // Include cookies for session management
       });
       if (!response.ok) throw new Error("Failed to fetch balance");
       const data = await response.json();
@@ -36,12 +37,13 @@ export const Funds = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/user/total_balance",
+        "http://localhost:4000/api/users/total_balance",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include", // Include cookies for session management
           body: JSON.stringify({ val: Number(add), operation: "add" }),
         }
       );
@@ -68,12 +70,13 @@ export const Funds = () => {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/user/total_balance",
+        "http://localhost:4000/api/users/total_balance",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          credentials: "include", // Include cookies for session management
           body: JSON.stringify({
             val: Number(withdraw),
             operation: "withdraw",

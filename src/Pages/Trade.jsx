@@ -30,7 +30,9 @@ const Trade = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/all_companies");
+      const response = await fetch("http://localhost:4000/api/stocks/companies", {
+        credentials: "include", // Include cookies for session management
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -45,13 +47,15 @@ const Trade = () => {
 
   const fetchStockInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/get_stock");
+      const response = await fetch("http://localhost:4000/api/stocks/portfolio", {
+        credentials: "include", // Include cookies for session management
+      });
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
 
       const data = await response.json();
-      setStockInfo(data);
+      setStockInfo(data.stocks || data); // Handle both old and new response format
     } catch (err) {
       console.error("Error fetching all company data:", err);
       setError("Failed to load company data");
@@ -60,7 +64,9 @@ const Trade = () => {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/current_news");
+      const response = await fetch("http://localhost:4000/api/market/news", {
+        credentials: "include", // Include cookies for session management
+      });
       if (!response.ok) throw new Error("Failed to fetch news");
       
       const data = await response.json();
@@ -78,29 +84,37 @@ const Trade = () => {
   };
   
 
-  const fetchparticularcompany = async (company_name, quantity1, operation) => {
+  const fetchparticularcompany = async (company_id, quantity, transaction_type) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/trade`, {
+      console.log("Trade request data:", { company_id, quantity, transaction_type });
+      
+      const response = await fetch(`http://localhost:4000/api/stocks/trade`, {
         method: "POST",
         headers: {
           "Content-type": "application/json",
         },
-        body: JSON.stringify({ company_name, quantity1, operation }),
+        credentials: "include", // Include cookies for session management
+        body: JSON.stringify({ company_id, quantity, transaction_type }),
       });
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Get the error details from the response
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Server error response:", errorData);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
+      
       const data = await response.json();
       return data;
     } catch (error) {
       console.error("Error:", error);
-      throw new Error("There is an error while performing trade operation.");
+      throw error; // Re-throw the original error instead of masking it
     }
   };
 
   const handleCompanySelect = (company) => {
     setSelectedCompany(company);
-    setSearch(company.name);
+    setSearch(company.company_name || company.name);
     // setFilteredCompanies([]);
   };
 
@@ -111,9 +125,22 @@ const Trade = () => {
       return;
     }
     try {
-      console.log(selectedCompany);
-      await fetchparticularcompany(selectedCompany, quantity, operation);
-      console.log("reached here");
+      console.log("Selected company:", selectedCompany);
+      console.log("Quantity:", quantity);
+      console.log("Operation:", operation);
+      
+      // Check if selectedCompany has company_id
+      if (!selectedCompany.company_id) {
+        setError("Invalid company selection. Please select a company from the list.");
+        return;
+      }
+      
+      // Transform operation to match new API format
+      const transaction_type = operation === "Buy_stock" ? "buy" : "sell";
+      console.log("Transaction type:", transaction_type);
+      
+      await fetchparticularcompany(selectedCompany.company_id, parseInt(quantity), transaction_type);
+      console.log("Trade completed successfully");
       setError(null);
       setTimeout(() => {
         setIsVisible(false); // Start fading
@@ -185,7 +212,9 @@ const Trade = () => {
                 />
                 {/* Search Suggestions */}
               </div>
-              <div className="text-center">{selectedCompany}</div>
+              <div className="text-center">
+                {selectedCompany ? `Selected: ${selectedCompany.company_name}` : "No company selected"}
+              </div>
               {/* Trade Options */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -275,7 +304,7 @@ const Trade = () => {
             {/* <h2 className="text-xl font-bold mb-4">Stock Details</h2> */}
             <table className="bg-transparent rounded-2xl text-white w-full border-separate border-spacing-0">
               <thead>
-                <tr className="bg-gray-700" class="relative">
+                <tr className="bg-gray-700 relative">
                   <th className="p-3 text-left text-white">Company Name</th>
                   <th className="p-3 text-left text-white">Stock Price</th>
                   <th className="p-3 text-right text-white">Stock Left</th>
@@ -286,7 +315,7 @@ const Trade = () => {
                   <tr
                     key={index}
                     className="hover:bg-gray-800 transition-colors cursor-pointer"
-                    onClick={() => setSelectedCompany(company.company_name)}
+                    onClick={() => handleCompanySelect(company)}
                   >
                     <td className="p-3 text-white text-left">
                       {company.company_name}

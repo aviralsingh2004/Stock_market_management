@@ -24,11 +24,16 @@ const Portfolio = () => {
   const [error, setError] = useState(null);
   const [tinfo, settinfo] = useState([]); // Transaction info
   const [ttype, settype] = useState("");
-  const [totprof, settotprof] = useState([]); //for total profit
+  const [totprof, settotprof] = useState({}); //for total profit
   const [comporf, setcomprof] = useState([]); //for company comparison
   const [stat, setstat] = useState(""); //for profit or loss status
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+
+  // Debug: Log totprof state changes
+  useEffect(() => {
+    console.log("totprof state changed:", totprof);
+  }, [totprof]);
 
   useEffect(() => {
     fetchBalance();
@@ -36,13 +41,13 @@ const Portfolio = () => {
     fetchTransactionInfo(); // Fetch transaction data on component mount
     fetchTotalprofit();
     fetchComprof();
-    fetchProfitloss();
   }, [ttype, startDate, endDate]);
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/user/balance", {
+      const response = await fetch("http://localhost:4000/api/users/balance", {
         method: "GET",
+        credentials: "include", // Include cookies for session management
       });
       if (!response.ok) throw new Error("Failed to fetch balance");
       const data = await response.json();
@@ -52,7 +57,7 @@ const Portfolio = () => {
     }
   };
   const pdfgenerator = async () => {
-    const response = await fetch('http://localhost:4000/api/generate-report', {
+    const response = await fetch('http://localhost:4000/api/transactions/report', {
       method: 'GET',
       credentials: 'include'
     })
@@ -79,12 +84,15 @@ const Portfolio = () => {
   };
   const fetchStockInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/get_stock");
+      const response = await fetch("http://localhost:4000/api/stocks/portfolio", {
+        credentials: "include", // Include cookies for session management
+      });
       if (!response.ok) throw new Error("Failed to fetch stock data");
       const data = await response.json();
 
-      // Filter stocks with quantity > 0
-      const filteredData = data.filter((stock) => stock.quantity > 0);
+      // Filter stocks with quantity > 0 and handle both old and new response format
+      const stocks = data.stocks || data;
+      const filteredData = stocks.filter((stock) => stock.quantity > 0);
       setStockInfo(filteredData);
     } catch (err) {
       console.error("Error fetching stock data:", err);
@@ -94,14 +102,16 @@ const Portfolio = () => {
 
   const fetchTransactionInfo = async () => {
     try {
-      let url = "http://localhost:4000/api/get_transaction";
+      let url = "http://localhost:4000/api/transactions";
       
       // Add date filters to URL if both dates are selected
       if (startDate && endDate) {
         url += `?startDate=${startDate}&endDate=${endDate}`;
       }
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        credentials: "include"
+      });
       if (!response.ok) throw new Error("Failed to get transaction record");
       const data = await response.json();
       settinfo(
@@ -119,13 +129,18 @@ const Portfolio = () => {
 
   const fetchTotalprofit = async () => {
     try {
-      const result = await fetch(`http://localhost:4000/api/profitloss`);
+      const result = await fetch(`http://localhost:4000/api/stocks/profit-loss`, {
+        credentials: "include", // Include cookies for session management
+      });
       if (!result.ok) throw new Error(`Failed to fetch profit/loss history`);
 
       const data = await result.json();
+      console.log("Full Profit/Loss data received:", data);
+      console.log("Summary data:", data.summary);
 
-      settotprof(data);
-      console.log(data);
+      // Set the summary data for status and amount display
+      settotprof(data.summary || {});
+      console.log("Set totprof to:", data.summary);
     } catch (error) {
       console.error("Error in fetching profit loss", error);
       setError("Failed to get total profit");
@@ -134,27 +149,30 @@ const Portfolio = () => {
 
   const fetchComprof = async () => {
     try {
+      console.log("Fetching company comparison data...");
       const result = await fetch(
-        `http://localhost:4000/api/particularprofitloss`
+        `http://localhost:4000/api/transactions/profit-loss`,
+        {
+          credentials: "include"
+        }
       );
-      if (!result.ok) throw new Error("Failed to get company-wise data");
+      
+      console.log("Response status:", result.status);
+      
+      if (!result.ok) {
+        const errorText = await result.text();
+        console.error("API Error:", errorText);
+        throw new Error("Failed to get company-wise data");
+      }
 
       const data = await result.json();
-      setcomprof(data);
+      console.log("Company comparison data received:", data);
+      // Extract the details array from the response
+      setcomprof(data.details || []);
     } catch (error) {
       console.error("Error fetching company-wise data:", error);
+      setcomprof([]); // Set empty array on error
     }
-  };
-
-  const fetchProfitloss = async () => {
-    try {
-      const result = await fetch(`http://localhost:4000/api/profitloss`);
-      if (!result.ok) throw new Error("failed to get proft loss statemnt");
-
-      const data = await result.json();
-      console.log(data);
-      settotprof(data);
-    } catch (error) {}
   };
 
   return (
@@ -248,7 +266,9 @@ const Portfolio = () => {
             </span>
             <br />
             <span className="font-bold">Amount:</span>{" "}
-            {totprof.amount ? `$${totprof.amount.toFixed(2)}` : "N/A"}
+            {totprof.amount !== undefined && totprof.amount !== null 
+              ? `$${totprof.amount.toFixed(2)}` 
+              : "N/A"}
           </div>
 
           {comporf && comporf.length > 0 ? (
@@ -258,15 +278,21 @@ const Portfolio = () => {
                   labels: comporf.map((cmp) => cmp.company_name),
                   datasets: [
                     {
-                      label: "Stock Price",
-                      data: comporf.map((cmp) => cmp.stock_price),
-                      backgroundColor: "#FF5733", // Stock Price color
+                      label: "Total Invested",
+                      data: comporf.map((cmp) => parseFloat(cmp.total_buy_amount) || 0),
+                      backgroundColor: "#FF5733", // Total Invested color
                       hoverOffset: 9,
                     },
                     {
-                      label: "Average Price",
-                      data: comporf.map((cmp) => cmp.average_price),
-                      backgroundColor: "#4CAF50", // Average Price color
+                      label: "Total Returns",
+                      data: comporf.map((cmp) => parseFloat(cmp.total_sell_amount) || 0),
+                      backgroundColor: "#4CAF50", // Total Returns color
+                      hoverOffset: 9,
+                    },
+                    {
+                      label: "Realized P&L",
+                      data: comporf.map((cmp) => parseFloat(cmp.realized_pnl) || 0),
+                      backgroundColor: "#2196F3", // Realized P&L color
                       hoverOffset: 9,
                     },
                   ],
@@ -279,6 +305,18 @@ const Portfolio = () => {
                       position: "right",
                       labels: {
                         color: "#fff", // Text color for legend items
+                      },
+                    },
+                  },
+                  scales: {
+                    y: {
+                      ticks: {
+                        color: "#fff", // Y-axis labels color
+                      },
+                    },
+                    x: {
+                      ticks: {
+                        color: "#fff", // X-axis labels color
                       },
                     },
                   },

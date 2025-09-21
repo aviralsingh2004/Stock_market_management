@@ -1,10 +1,10 @@
 CREATE TABLE Users (
-    user_id SERIAL PRIMARY KEY,
+    user_id VARCHAR(100) PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    total_balance NUMERIC(15, 2) DEFAULT 0,
+    total_balance NUMERIC(15, 2) DEFAULT 0
 );
 CREATE TABLE Companies (
     company_id SERIAL PRIMARY KEY,
@@ -42,4 +42,4 @@ CREATE TABLE IF NOT EXISTS market_data (
       volume BIGINT
     );
 
-ALTER TABLE stocks ADD CONSTRAINT unique_user_company UNIQUE (user_id, company_id);
+ALTER TABLE stocks ADD CONSTRAINT unique_user_company UNIQUE (user_id,company_id);
