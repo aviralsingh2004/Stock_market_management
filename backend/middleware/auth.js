@@ -1,11 +1,11 @@
-// Authentication middleware to check if user is logged in
+﻿// Authentication middleware to check if user is logged in
 export const requireAuth = (req, res, next) => {
   if (req.session && req.session.user) {
     // User is authenticated, proceed to next middleware/route
     next();
   } else {
     // User is not authenticated
-    res.status(401).json({ 
+    return res.status(401).json({ 
       error: "Authentication required",
       message: "Please log in to access this resource" 
     });
@@ -23,7 +23,7 @@ export const requireAdmin = (req, res, next) => {
   if (req.session && req.session.user && req.session.user.isAdmin) {
     next();
   } else {
-    res.status(403).json({ 
+    return res.status(403).json({ 
       error: "Admin access required",
       message: "You don't have permission to access this resource" 
     });

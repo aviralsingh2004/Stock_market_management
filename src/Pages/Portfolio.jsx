@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 import {
   Chart as ChartJS,
@@ -29,6 +31,25 @@ const Portfolio = () => {
   const [stat, setstat] = useState(""); //for profit or loss status
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleUnauthorized = useCallback(async () => {
+    await logout();
+    navigate("/login", { replace: true, state: { from: location } });
+  }, [location, logout, navigate]);
+
+  const fetchWithAuth = useCallback(async (url, options = {}) => {
+    const response = await fetch(url, { ...options, credentials: "include" });
+
+    if (response.status === 401) {
+      await handleUnauthorized();
+      throw new Error("Unauthorized");
+    }
+
+    return response;
+  }, [handleUnauthorized]);
 
   // Debug: Log totprof state changes
   useEffect(() => {
@@ -45,56 +66,56 @@ const Portfolio = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/users/balance", {
+      const response = await fetchWithAuth("http://localhost:4000/api/users/balance", {
         method: "GET",
-        credentials: "include", // Include cookies for session management
       });
-      if (!response.ok) throw new Error("Failed to fetch balance");
       const data = await response.json();
       setBalance(data.balance);
     } catch (error) {
+      if (error.message === "Unauthorized") {
+        return;
+      }
       console.error("Failed to fetch balance:", error);
     }
   };
   const pdfgenerator = async () => {
-    const response = await fetch('http://localhost:4000/api/transactions/report', {
-      method: 'GET',
-      credentials: 'include'
-    })
-    .then(response => {
-      if (response.ok) {
-        return response.blob();
+    try {
+      const response = await fetchWithAuth("http://localhost:4000/api/transactions/report", {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
       }
-      throw new Error('Network response was not ok');
-    })
-    .then(blob => {
-      // Create a URL for the blob
+
+      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      // Create a temporary link and click it to download
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'stock_report.pdf';
+      a.download = "stock_report.pdf";
       document.body.appendChild(a);
       a.click();
-      // Clean up
       window.URL.revokeObjectURL(url);
       a.remove();
-    })
-    .catch(error => console.error('Error downloading report:', error));
+    } catch (error) {
+      if (error.message === "Unauthorized") {
+        return;
+      }
+      console.error("Error downloading report:", error);
+    }
   };
   const fetchStockInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/stocks/portfolio", {
-        credentials: "include", // Include cookies for session management
-      });
-      if (!response.ok) throw new Error("Failed to fetch stock data");
+      const response = await fetchWithAuth("http://localhost:4000/api/stocks/portfolio");
       const data = await response.json();
 
-      // Filter stocks with quantity > 0 and handle both old and new response format
       const stocks = data.stocks || data;
       const filteredData = stocks.filter((stock) => stock.quantity > 0);
       setStockInfo(filteredData);
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       console.error("Error fetching stock data:", err);
       setError("Failed to load stock data");
     }
@@ -103,15 +124,12 @@ const Portfolio = () => {
   const fetchTransactionInfo = async () => {
     try {
       let url = "http://localhost:4000/api/transactions";
-      
-      // Add date filters to URL if both dates are selected
+
       if (startDate && endDate) {
         url += `?startDate=${startDate}&endDate=${endDate}`;
       }
-      
-      const response = await fetch(url, {
-        credentials: "include"
-      });
+
+      const response = await fetchWithAuth(url);
       if (!response.ok) throw new Error("Failed to get transaction record");
       const data = await response.json();
       settinfo(
@@ -122,6 +140,9 @@ const Portfolio = () => {
         }))
       );
     } catch (error) {
+      if (error.message === "Unauthorized") {
+        return;
+      }
       console.error("Error in fetching transaction history:", error);
       setError("Failed to load transaction history");
     }
@@ -129,36 +150,23 @@ const Portfolio = () => {
 
   const fetchTotalprofit = async () => {
     try {
-      const result = await fetch(`http://localhost:4000/api/stocks/profit-loss`, {
-        credentials: "include", // Include cookies for session management
-      });
+      const result = await fetchWithAuth(`http://localhost:4000/api/stocks/profit-loss`);
       if (!result.ok) throw new Error(`Failed to fetch profit/loss history`);
 
       const data = await result.json();
-      console.log("Full Profit/Loss data received:", data);
-      console.log("Summary data:", data.summary);
-
-      // Set the summary data for status and amount display
       settotprof(data.summary || {});
-      console.log("Set totprof to:", data.summary);
+      setstat(data.summary?.status || "");
     } catch (error) {
+      if (error.message === "Unauthorized") {
+        return;
+      }
       console.error("Error in fetching profit loss", error);
-      setError("Failed to get total profit");
     }
   };
 
   const fetchComprof = async () => {
     try {
-      console.log("Fetching company comparison data...");
-      const result = await fetch(
-        `http://localhost:4000/api/transactions/profit-loss`,
-        {
-          credentials: "include"
-        }
-      );
-      
-      console.log("Response status:", result.status);
-      
+      const result = await fetchWithAuth(`http://localhost:4000/api/transactions/profit-loss`);
       if (!result.ok) {
         const errorText = await result.text();
         console.error("API Error:", errorText);
@@ -166,12 +174,12 @@ const Portfolio = () => {
       }
 
       const data = await result.json();
-      console.log("Company comparison data received:", data);
-      // Extract the details array from the response
-      setcomprof(data.details || []);
+      setcomprof(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Error fetching company-wise data:", error);
-      setcomprof([]); // Set empty array on error
+      if (error.message === "Unauthorized") {
+        return;
+      }
+      console.error("Error fetching company comparison data:", error);
     }
   };
 
@@ -423,3 +431,28 @@ const Portfolio = () => {
 };
 
 export default Portfolio;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

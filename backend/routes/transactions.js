@@ -1,8 +1,11 @@
-import express from "express";
+﻿import express from "express";
 import TransactionController from "../controllers/TransactionController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 const transactionController = new TransactionController();
+
+router.use(requireAuth);
 
 // Get user's transaction history
 router.get("/", (req, res) => transactionController.getTransactionHistory(req, res));

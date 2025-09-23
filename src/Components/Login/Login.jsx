@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+﻿import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export const Login = () => {
   const [formData, setFormData] = useState({
@@ -7,7 +8,34 @@ export const Login = () => {
     password: "",
   });
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, authError, clearAuthError, isAuthenticated, initializing } = useAuth();
+
+  const redirectPath = useMemo(() => {
+    const from = location.state?.from?.pathname || "/home";
+    if (from === "/login" || from === "/") {
+      return "/home";
+    }
+    return from;
+  }, [location.state]);
+
+  useEffect(() => {
+    if (!initializing && isAuthenticated) {
+      navigate(redirectPath, { replace: true });
+    }
+  }, [initializing, isAuthenticated, navigate, redirectPath]);
+
+  useEffect(() => {
+    if (authError) {
+      setError(authError);
+    }
+  }, [authError]);
+
+  useEffect(() => {
+    return () => clearAuthError();
+  }, [clearAuthError]);
 
   const handleChange = (e) => {
     setFormData({
@@ -19,33 +47,27 @@ export const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    console.log("Attempting to send login data:", formData);
+    setIsSubmitting(true);
+    clearAuthError();
 
     try {
-      const response = await fetch("http://localhost:4000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Include cookies for session management
-        body: JSON.stringify(formData),
-      });
-
-      console.log("Response received:", response.status);
-      const data = await response.json();
-      console.log("Response data:", data);
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // If login successful, navigate to home page
-      navigate("/home");
+      await login(formData);
+      navigate(redirectPath, { replace: true });
     } catch (err) {
-      console.error("Detailed error:", err);
-      setError(err.message || "An error occurred. Please try again.");
+      const message = err?.message || "An error occurred. Please try again.";
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  if (initializing && !isAuthenticated) {
+    return (
+      <div className="bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center text-white">
+        Checking session...
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-b from-gray-900 to-black min-h-screen flex items-center justify-center overflow-hidden relative">
@@ -53,7 +75,7 @@ export const Login = () => {
         <h2 className=" text-3xl pb-3 font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-gray-400 via-gray-500 to-gray-400">
           Login
         </h2>
-        {error && (
+        {(error) && (
           <div className="bg-red-100 text-red-700 p-2 rounded mb-4">
             {error}
           </div>
@@ -97,9 +119,10 @@ export const Login = () => {
           </div>
           <button
             type="submit"
-            className="w-full py-3 my-4 bg-gradient-to-r from-blue-400 to-blue-500 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-900 hover:text-white"
+            className="w-full py-3 my-4 bg-gradient-to-r from-blue-400 to-blue-500 text-white font-semibold rounded-lg transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-70"
+            disabled={isSubmitting}
           >
-            Login
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
         <div

@@ -1,23 +1,18 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Navbar as MTNavbar,
-  MobileNav,
   Typography,
   Button,
   IconButton,
 } from "@material-tailwind/react";
+import { useAuth } from "../../context/AuthContext";
 
 export const Navbar = () => {
-  const [menu, setMenu] = useState("home");
   const [openNav, setOpenNav] = useState(false);
-  const [userName, setUserName] = useState("");
   const navigate = useNavigate();
-  const location = useLocation(); // Hook to get current path
-
-  // Handle responsive behavior
-  useEffect(() => {
-    fetchUser();
+  const location = useLocation();
+  const { user, logout } = useAuth();  useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 960) {
         setOpenNav(false);
@@ -28,25 +23,15 @@ export const Navbar = () => {
   }, []);
 
   const handleNavigate = (path) => {
-    setMenu(path);
     navigate(`/${path}`);
   };
 
-  const fetchUser = async () => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/users/username`, {
-        method: "GET",
-        credentials: "include", // Include cookies for session management
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch username");
-      }
-      const data = await response.json();
-      setUserName(data);
-    } catch (err) {
-      console.error("Error fetching username:", err);
-    }
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login", { replace: true });
   };
+
+  const displayName = user?.first_name || user?.email || "Trader";
 
   const navList = (
     <ul className="mt-2 mb-4 flex flex-col gap-4 lg:mb-0 lg:mt-0 lg:flex-row lg:items-center lg:gap-6 text-white">
@@ -113,10 +98,6 @@ export const Navbar = () => {
     </ul>
   );
 
-  const handleClick = () => {
-    navigate("/");
-  };
-
   return (
     <MTNavbar className="fixed top-0 left-0 w-full z-10 bg-gradient-to-r from-blue-950 via-blue-950 to-black px-4 py-3 lg:px-8 lg:py-4 shadow-lg">
       <div className="flex items-center justify-between">
@@ -125,14 +106,14 @@ export const Navbar = () => {
           href="#"
           className="mr-4 text-lg font-bold text-white cursor-pointer"
         >
-          Hello {userName}
+          Hello {displayName}
         </Typography>
         <div className="hidden lg:flex lg:items-center lg:gap-4">{navList}</div>
         <div className="hidden lg:flex lg:items-center lg:gap-2">
           <Button
             size="sm"
             className="rounded-md bg-indigo-600 text-white hover:bg-indigo-700 transition"
-            onClick={handleClick}
+            onClick={handleLogout}
           >
             Log out
           </Button>

@@ -1,9 +1,12 @@
-import express from "express";
+﻿import express from "express";
 import { getDbClient } from "../config/database.js";
 import scrapeAndStoreStockData from "../services/dataFetcher.js";
 import { scrapeNews } from "../services/newsScraper.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
+
+router.use(requireAuth);
 
 // Get real-time market data
 router.get("/real-time", async (req, res) => {
@@ -20,7 +23,7 @@ router.get("/real-time", async (req, res) => {
         total_shares INT NOT NULL
       );
     `;
-    
+
     await db.query(createTableQuery);
     console.log("Companies table created successfully");
     
@@ -87,15 +90,15 @@ router.get("/real-time/:symbol", async (req, res) => {
       FROM Companies 
       WHERE ticker_symbol = $1
     `;
-    
+
     const result = await db.query(query, [symbol]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: `Company with symbol ${symbol} not found` });
+      return res.status(404).json({ error: "Company with symbol not found" });
     }
 
-    console.log(`Real-time data fetched for ${symbol}:`, result.rows.length, "records");
-    
+    console.log("Real-time data fetched for:", result.rows.length, "records");
+
     const company = result.rows[0];
     res.status(200).json({
       company_id: parseInt(company.company_id),
@@ -114,17 +117,18 @@ router.get("/historical/:symbol", async (req, res) => {
     const { symbol } = req.params;
     const { limit = 30 } = req.query;
     const db = getDbClient();
-    
+
     const query = `
-      SELECT date, open, high, low, close, volume 
-      FROM market_data 
-      WHERE symbol = $1 
-      ORDER BY date DESC 
+      SELECT date, open, high, low, close, volume
+      FROM market_data
+      WHERE symbol = $1
+      ORDER BY date DESC
       LIMIT $2
     `;
 
-    const result = await db.query(query, [symbol, parseInt(limit)]);
-    console.log(`Historical data fetched for ${symbol}:`, result.rows.length, "records");
+    const limitValue = Number.parseInt(limit, 10) || 30;
+    const result = await db.query(query, [symbol, limitValue]);
+    console.log("Historical data fetched for:", result.rows.length, "records");
     
     res.status(200).json(result.rows);
   } catch (error) {

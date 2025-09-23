@@ -1,9 +1,12 @@
-import express from "express";
+﻿import express from "express";
 import UserController from "../controllers/UserController.js";
 import { validateBalance } from "../middleware/validation.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 const userController = new UserController();
+
+router.use(requireAuth);
 
 // Get user profile
 router.get("/profile/:userId", (req, res) => userController.getProfile(req, res));
@@ -15,7 +18,7 @@ router.get("/username", (req, res) => userController.getUsername(req, res));
 router.get("/balance", (req, res) => userController.getBalance(req, res));
 
 // Update user balance (add/withdraw)
-router.post("/balance", (req, res) => userController.updateBalance(req, res));
+router.post("/balance", validateBalance, (req, res) => userController.updateBalance(req, res));
 
 // Set total balance
 router.post("/total_balance", (req, res) => userController.setTotalBalance(req, res));

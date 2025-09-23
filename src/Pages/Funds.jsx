@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar/Navbar";
+import { useAuth } from "../context/AuthContext";
 
 export const Funds = () => {
   const [add, setAdd] = useState("");
@@ -7,6 +9,25 @@ export const Funds = () => {
   const [err, seterr] = useState("");
   const [balance, setBalance] = useState(0);
   const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleUnauthorized = useCallback(async () => {
+    await logout();
+    navigate("/login", { replace: true, state: { from: location } });
+  }, [location, logout, navigate]);
+
+  const fetchWithAuth = useCallback(async (url, options = {}) => {
+    const response = await fetch(url, { ...options, credentials: "include" });
+
+    if (response.status === 401) {
+      await handleUnauthorized();
+      throw new Error("Unauthorized");
+    }
+
+    return response;
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     fetchBalance();
@@ -14,14 +35,17 @@ export const Funds = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/users/balance", {
+      const response = await fetchWithAuth("http://localhost:4000/api/users/balance", {
         method: "GET",
-        credentials: "include", // Include cookies for session management
       });
+
       if (!response.ok) throw new Error("Failed to fetch balance");
       const data = await response.json();
       setBalance(data.balance);
     } catch (error) {
+      if (error.message === "Unauthorized") {
+        return;
+      }
       console.log("Failed to fetch balance");
     }
   };
@@ -36,18 +60,18 @@ export const Funds = () => {
     }
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         "http://localhost:4000/api/users/total_balance",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // Include cookies for session management
           body: JSON.stringify({ val: Number(add), operation: "add" }),
         }
       );
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(`Server responded with status: ${response.status}`);
       }
@@ -55,6 +79,9 @@ export const Funds = () => {
       setSuccess("Funds added Successfully!");
       setAdd("");
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       seterr(err.message || "Failed to add funds");
     }
   };
@@ -69,14 +96,13 @@ export const Funds = () => {
     }
 
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         "http://localhost:4000/api/users/total_balance",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // Include cookies for session management
           body: JSON.stringify({
             val: Number(withdraw),
             operation: "withdraw",
@@ -84,6 +110,7 @@ export const Funds = () => {
         }
       );
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(`Insufficient Balance`);
       }
@@ -91,6 +118,9 @@ export const Funds = () => {
       setSuccess("Funds withdrawn Successfully!");
       setWithdraw("");
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       seterr(err.message || "Failed to withdraw funds");
     }
   };
@@ -104,12 +134,10 @@ export const Funds = () => {
             Wallet
           </h2>
 
-          {/* Display balance */}
           <div className="  text-center text-white mb-4">
-            <p className="text-lg">Current Balance: ${balance}</p>
+            <p className="text-lg">Current Balance: {balance}</p>
           </div>
 
-          {/* Error and success messages */}
           {err && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded">
               {err}
@@ -121,7 +149,6 @@ export const Funds = () => {
             </div>
           )}
 
-          {/* Add Funds Form */}
           <form className="space-y-4" onSubmit={handleAdd}>
             <div className="space-y-2 ">
               <label
@@ -152,7 +179,6 @@ export const Funds = () => {
             </div>
           </form>
 
-          {/* Withdraw Funds Form */}
           <form className="space-y-4" onSubmit={handleWithdraw}>
             <div className="space-y-2">
               <label
@@ -189,3 +215,9 @@ export const Funds = () => {
 };
 
 export default Funds;
+
+
+
+
+
+

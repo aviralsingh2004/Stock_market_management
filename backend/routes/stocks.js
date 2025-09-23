@@ -1,9 +1,12 @@
-import express from "express";
+﻿import express from "express";
 import StockController from "../controllers/StockController.js";
 import { validateTrade } from "../middleware/validation.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 const stockController = new StockController();
+
+router.use(requireAuth);
 
 // Get user's stock portfolio
 router.get("/portfolio", (req, res) => stockController.getPortfolio(req, res));

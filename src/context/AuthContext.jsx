@@ -1,0 +1,110 @@
+﻿import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+
+const AuthContext = createContext(undefined);
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [initializing, setInitializing] = useState(true);
+  const [authError, setAuthError] = useState(null);
+
+  const refreshAuth = useCallback(async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/auth/check", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        setUser(null);
+        setAuthError(null);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.authenticated) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
+      setAuthError(null);
+    } catch (error) {
+      console.error("Failed to verify authentication:", error);
+      setUser(null);
+      setAuthError("Unable to verify authentication status. Please try again.");
+    } finally {
+      setInitializing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshAuth();
+  }, [refreshAuth]);
+
+  const login = useCallback(async ({ email, password }) => {
+    try {
+      setAuthError(null);
+      const response = await fetch("http://localhost:4000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const message = data?.error || "Login failed";
+        setAuthError(message);
+        throw new Error(message);
+      }
+
+      setUser(data.user);
+      return data.user;
+    } catch (error) {
+      if (!(error instanceof Error)) {
+        setAuthError("Login failed");
+        throw new Error("Login failed");
+      }
+      throw error;
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch("http://localhost:4000/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (error) {
+      console.error("Failed to log out:", error);
+    } finally {
+      setUser(null);
+    }
+  }, []);
+
+  const clearAuthError = useCallback(() => {
+    setAuthError(null);
+  }, []);
+
+  const value = useMemo(() => ({
+    user,
+    isAuthenticated: Boolean(user),
+    initializing,
+    login,
+    logout,
+    refreshAuth,
+    authError,
+    clearAuthError,
+  }), [authError, clearAuthError, initializing, login, logout, refreshAuth, user]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+};

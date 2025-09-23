@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./home.css";
 import Navbar from "../Components/Navbar/Navbar";
 import { Line } from "react-chartjs-2";
@@ -12,6 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import { useAuth } from "../context/AuthContext";
 
 // Register ChartJS components
 ChartJS.register(
@@ -31,7 +33,10 @@ export const Home = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [historicalData, setHistoricalData] = useState(null);
-  const chartRef = useRef(null); // Ref for chart container
+  const chartRef = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
 
   useEffect(() => {
     fetchCompanies();
@@ -40,8 +45,9 @@ export const Home = () => {
   const fetchCompanies = async () => {
     try {
       const response = await fetch("http://localhost:4000/api/market/companies", {
-        credentials: "include", // Include cookies for session management
+        credentials: "include"
       });
+
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -49,6 +55,10 @@ export const Home = () => {
       setCompanies(data);
       setLoading(false);
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        setLoading(false);
+        return;
+      }
       console.error("Error fetching companies:", err);
       setError("Failed to load company data");
       setLoading(false);
@@ -69,8 +79,11 @@ export const Home = () => {
       const data = await response.json();
       setHistoricalData(data);
       setSelectedCompany(symbol);
-      scrollToChart(); // Scroll to the chart after selecting a company
+      scrollToChart();
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       console.error("Error fetching historical data:", err);
       setError("Failed to load historical data");
     }
@@ -83,7 +96,7 @@ export const Home = () => {
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
     if (e.target.value.trim() !== "") {
-      setHistoricalData(null); // Hide chart during search
+      setHistoricalData(null);
       setSelectedCompany(null);
     }
   };
@@ -217,3 +230,8 @@ export const Home = () => {
 };
 
 export default Home;
+
+
+
+
+

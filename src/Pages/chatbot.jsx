@@ -1,5 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hello! How can I help you today?" },
@@ -7,6 +9,14 @@ const ChatInterface = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleUnauthorized = useCallback(async () => {
+    await logout();
+    navigate("/login", { replace: true, state: { from: location } });
+  }, [location, logout, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,7 +40,12 @@ const ChatInterface = () => {
       });
 
       console.log("Response status:", response.status);
-      
+
+      if (response.status === 401) {
+        await handleUnauthorized();
+        return "Session expired. Redirecting to login.";
+      }
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -152,3 +167,12 @@ const ChatInterface = () => {
 };
 
 export default ChatInterface;
+
+
+
+
+
+
+
+
+

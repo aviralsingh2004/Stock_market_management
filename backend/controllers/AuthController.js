@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+﻿import User from "../models/User.js";
 
 class AuthController {
   constructor() {
@@ -53,16 +53,33 @@ class AuthController {
 
       // Authenticate user
       const user = await this.userModel.authenticateUser(email, password);
-      
-      // Store user info in session (you might want to use JWT tokens instead)
-      req.session = req.session || {};
-      req.session.user = {
-        userId: user.user_id,
-        email: user.email,
-        firstName: user.first_name
-      };
 
-      res.status(200).json({ 
+      if (!req.session) {
+        return res.status(500).json({ error: "Session not initialized" });
+      }
+
+      await new Promise((resolve, reject) => {
+        req.session.regenerate((err) => {
+          if (err) {
+            return reject(err);
+          }
+
+          req.session.user = {
+            userId: user.user_id,
+            email: user.email,
+            firstName: user.first_name
+          };
+
+          req.session.save((saveErr) => {
+            if (saveErr) {
+              return reject(saveErr);
+            }
+            resolve();
+          });
+        });
+      });
+
+      return res.status(200).json({ 
         message: "Login successful",
         user: {
           user_id: user.user_id,
@@ -92,12 +109,14 @@ class AuthController {
       if (req.session) {
         req.session.destroy((err) => {
           if (err) {
+            console.error("Logout error:", err);
             return res.status(500).json({ error: "Could not log out" });
           }
-          res.status(200).json({ message: "Logout successful" });
+          res.clearCookie("connect.sid");
+          return res.status(200).json({ message: "Logout successful" });
         });
       } else {
-        res.status(200).json({ message: "No active session" });
+        return res.status(200).json({ message: "No active session" });
       }
     } catch (error) {
       console.error("Logout error:", error);
@@ -111,7 +130,7 @@ class AuthController {
       if (req.session && req.session.user) {
         const user = await this.userModel.findUserById(req.session.user.userId);
         if (user) {
-          res.status(200).json({ 
+          return res.status(200).json({ 
             authenticated: true,
             user: {
               user_id: user.user_id,
@@ -120,12 +139,9 @@ class AuthController {
               email: user.email
             }
           });
-        } else {
-          res.status(401).json({ authenticated: false });
         }
-      } else {
-        res.status(401).json({ authenticated: false });
       }
+      return res.status(200).json({ authenticated: false });
     } catch (error) {
       console.error("Auth check error:", error);
       res.status(500).json({ error: "Internal server error" });

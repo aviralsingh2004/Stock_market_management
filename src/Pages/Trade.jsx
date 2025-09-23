@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { typographyClasses } from "@mui/material";
 
 const Trade = () => {
@@ -16,6 +18,25 @@ const Trade = () => {
   const [isVisible, setIsVisible] = useState(false);
   // const [filteredCompanies, setFilteredCompanies] = useState([]);
   const [news, setNews] = useState([]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleUnauthorized = useCallback(async () => {
+    await logout();
+    navigate("/login", { replace: true, state: { from: location } });
+  }, [location, logout, navigate]);
+
+  const fetchWithAuth = useCallback(async (url, options = {}) => {
+    const response = await fetch(url, { ...options, credentials: "include" });
+
+    if (response.status === 401) {
+      await handleUnauthorized();
+      throw new Error("Unauthorized");
+    }
+
+    return response;
+  }, [handleUnauthorized]);
 
   useEffect(() => {
     fetchCompanies();
@@ -30,9 +51,7 @@ const Trade = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/stocks/companies", {
-        credentials: "include", // Include cookies for session management
-      });
+      const response = await fetchWithAuth("http://localhost:4000/api/stocks/companies");
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -40,6 +59,9 @@ const Trade = () => {
       setLoading(null);
       setCompanies(data);
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       console.error("Error fetching all company data:", err);
       setError("Failed to load company data");
     }
@@ -47,16 +69,17 @@ const Trade = () => {
 
   const fetchStockInfo = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/stocks/portfolio", {
-        credentials: "include", // Include cookies for session management
-      });
+      const response = await fetchWithAuth("http://localhost:4000/api/stocks/portfolio");
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
 
       const data = await response.json();
-      setStockInfo(data.stocks || data); // Handle both old and new response format
+      setStockInfo(data.stocks || data);
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       console.error("Error fetching all company data:", err);
       setError("Failed to load company data");
     }
@@ -64,21 +87,21 @@ const Trade = () => {
 
   const fetchNews = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/market/news", {
-        credentials: "include", // Include cookies for session management
-      });
+      const response = await fetchWithAuth("http://localhost:4000/api/market/news");
       if (!response.ok) throw new Error("Failed to fetch news");
       
       const data = await response.json();
       
-      // Wait until data is non-empty
       if (data && data.length > 0) {
         setNews(data);
       } else {
         console.log("Waiting for news data...");
-        setTimeout(fetchNews, 3000); // Retry after 3 seconds
+        setTimeout(fetchNews, 3000);
       }
     } catch (err) {
+      if (err.message === "Unauthorized") {
+        return;
+      }
       console.error("Error fetching news:", err);
     }
   };
@@ -88,17 +111,15 @@ const Trade = () => {
     try {
       console.log("Trade request data:", { company_id, quantity, transaction_type });
       
-      const response = await fetch(`http://localhost:4000/api/stocks/trade`, {
+      const response = await fetchWithAuth(`http://localhost:4000/api/stocks/trade`, {
         method: "POST",
         headers: {
           "Content-type": "application/json",
         },
-        credentials: "include", // Include cookies for session management
         body: JSON.stringify({ company_id, quantity, transaction_type }),
       });
       
       if (!response.ok) {
-        // Get the error details from the response
         const errorData = await response.json().catch(() => ({}));
         console.error("Server error response:", errorData);
         throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Unknown error'}`);
@@ -107,8 +128,11 @@ const Trade = () => {
       const data = await response.json();
       return data;
     } catch (error) {
+      if (error.message === "Unauthorized") {
+        throw error;
+      }
       console.error("Error:", error);
-      throw error; // Re-throw the original error instead of masking it
+      throw error;
     }
   };
 
@@ -338,3 +362,16 @@ const Trade = () => {
 };
 
 export default Trade;
+
+
+
+
+
+
+
+
+
+
+
+
+
