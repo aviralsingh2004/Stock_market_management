@@ -2,6 +2,94 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar, Line } from "react-chartjs-2";
+
+// Register required Chart.js elements once
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+// Build dataset for Chart.js from the backend payload
+const GraphRenderer = ({ payload }) => {
+  if (!payload || !payload.mapping || !payload.data) return null;
+
+  const { type, mapping, data, reason } = payload;
+  const { xKey, yKey, yKeys } = mapping;
+
+  if (!xKey || (!yKey && !yKeys)) {
+    return (
+      <p className="text-yellow-400">Unable to build chart from the data.</p>
+    );
+  }
+
+  const labels = data.map((row) => {
+    const v = row[xKey];
+    try {
+      // Render ISO dates nicely if possible
+      const d = new Date(v);
+      if (!isNaN(d.getTime())) return d.toLocaleDateString();
+    } catch (_) {}
+    return String(v);
+  });
+
+  const numericKeys = Array.isArray(yKeys) && yKeys.length ? yKeys : [yKey];
+
+  const datasets = numericKeys.map((key, idx) => ({
+    label: key,
+    data: data.map((row) => Number(row[key]) || 0),
+    backgroundColor:
+      type === "bar"
+        ? [
+            "#4BC0C0",
+            "#36A2EB",
+            "#9966FF",
+            "#FF6384",
+            "#FF9F40",
+          ][idx % 5]
+        : "rgba(75,192,192,0.6)",
+    borderColor: type === "line" ? "rgb(75,192,192)" : undefined,
+    borderWidth: type === "line" ? 2 : undefined,
+    tension: type === "line" ? 0.2 : undefined,
+    fill: type === "line",
+  }));
+
+  const chartData = { labels, datasets };
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: "top" },
+      title: { display: !!reason, text: reason || "" },
+    },
+    scales: {
+      x: { ticks: { color: "#fff" } },
+      y: { ticks: { color: "#fff" } },
+    },
+  };
+
+  return type === "bar" ? (
+    <Bar data={chartData} options={chartOptions} />
+  ) : (
+    <Line data={chartData} options={chartOptions} />
+  );
+};
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
     { role: "assistant", content: "Hello! How can I help you today?" },
@@ -52,10 +140,13 @@ const ChatInterface = () => {
 
       const data = await response.json();
       console.log("Response data:", data);
-      return data.interpretation || data.response || "No response available";
+      return data; // return full payload including graph details
     } catch (error) {
       console.error("Error in processPrompt:", error);
-      return "This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.";
+      return {
+        interpretation:
+          "This operation requires database modification which is not allowed. Please ask questions about reading/querying the existing data only.",
+      };
     }
   };
 
@@ -112,22 +203,25 @@ const ChatInterface = () => {
             }`}
           >
             <div className="flex-1">
-              {message.role === "assistant" && 
-               typeof message.content === "object" && 
-               message.content && 
-               message.content.query && (
-                <div className="mb-2">
-                  <p className="text-gray-400 text-sm">Generated Query:</p>
-                  <code className="block bg-gray-900 p-2 rounded mt-1 text-green-400">
-                    {message.content.query}
-                  </code>
-                </div>
-              )}
-              <p className="text-white">
+              {/* Intentionally hide generated SQL from UI */}
+
+              {/* Assistant interpretation text */}
+              <p className="text-white mb-2">
                 {typeof message.content === "string"
                   ? message.content
-                  : (message.content?.response || JSON.stringify(message.content) || "No response")}
+                  : message.content?.interpretation ||
+                    message.content?.response ||
+                    "No response"}
               </p>
+
+              {/* Optional graph rendering */}
+              {message.role === "assistant" &&
+                typeof message.content === "object" &&
+                message.content?.graph?.required && (
+                  <div className="bg-gray-900 p-4 rounded-lg mt-2">
+                    <GraphRenderer payload={message.content.graph} />
+                  </div>
+                )}
             </div>
           </div>
         ))}

@@ -1,6 +1,20 @@
 import Groq from "groq-sdk";
 import { getDbClient } from "../config/database.js";
 
+// Only support fixed graph types: bar and line
+const GRAPH_TEMPLATES = Object.freeze({
+  bar: {
+    type: "bar",
+    description:
+      "Compare values across categories using vertical bars. Best when you have categorical x values and numeric y values.",
+  },
+  line: {
+    type: "line",
+    description:
+      "Show trends over an ordered dimension (e.g., time) with a line connecting data points.",
+  },
+});
+
 class AIController {
   constructor() {
     this.groq = new Groq({
@@ -29,6 +43,8 @@ class AIController {
       if (!prompt || prompt.trim() === "") {
         return res.status(400).json({ error: "Prompt is required" });
       }
+
+      const needsGraph = await this.detectGraphIntent(prompt);
 
       // Get database structure for AI context
       const dbStructure = await this.getTableStructures();
@@ -70,12 +86,24 @@ class AIController {
         tableContent
       );
 
+      let graphPayload = { required: false };
+      if (needsGraph && queryResults.rows.length) {
+        try {
+          const graphDecision = await this.selectGraphConfiguration(prompt, queryResults.rows);
+          if (graphDecision) {
+            graphPayload = this.buildGraphPayload(graphDecision, queryResults.rows);
+          }
+        } catch (graphError) {
+          console.error('Graph preparation error:', graphError);
+        }
+      }
+
       res.status(200).json({
         query: prompt,
-        sql_executed: sqlQuery,
         raw_results: queryResults.rows,
         interpretation: interpretation,
-        table_used: relevantTable
+        table_used: relevantTable,
+        graph: graphPayload
       });
 
     } catch (error) {
@@ -85,6 +113,190 @@ class AIController {
         details: error.message 
       });
     }
+  }
+
+  async detectGraphIntent(prompt) {
+    // Graphs should only be produced when user explicitly asks
+    if (!prompt) return false;
+    const p = String(prompt).toLowerCase();
+    const explicitGraphRegex = /\b(graph|chart|plot|visuali[sz]e|bar chart|line chart)\b/;
+    return explicitGraphRegex.test(p);
+  }
+
+  async selectGraphConfiguration(prompt, rows) {
+    // Heuristic-only selector: choose between 'line' and 'bar'
+    const firstRow = rows?.find((r) => r && Object.keys(r).length) || {};
+    const cols = Object.keys(firstRow);
+
+    // Identify potential x and y candidates
+    const timeLikeCols = cols.filter((c) =>
+      /date|time|timestamp|created|updated|day|month|year/i.test(c)
+    );
+    const numericCols = cols.filter((c) => typeof firstRow[c] === "number");
+    const categoricalCols = cols.filter((c) => !numericCols.includes(c));
+
+    const p = String(prompt || "").toLowerCase();
+    const wantsTrend = /over time|trend|history|daily|monthly|weekly|timeline|progress|evolv|increase|decrease|date|time|day|month|year/.test(
+      p
+    );
+
+    const xKey = timeLikeCols[0] || categoricalCols[0] || cols[0] || null;
+    const yKey = numericCols[0] || null;
+
+    const type = wantsTrend || timeLikeCols.length ? "line" : "bar";
+
+    return {
+      type,
+      reason:
+        type === "line"
+          ? "Line chart selected for time-based or trend data."
+          : "Bar chart selected for categorical comparisons.",
+      xKey,
+      yKey,
+      yKeys: null,
+      seriesKey: null,
+    };
+  }
+
+  tryParseJSON(value) {
+    if (!value) return null;
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  extractJSONObject(content) {
+    if (!content) return null;
+    const start = content.indexOf('{');
+    if (start === -1) {
+      return null;
+    }
+
+    let depth = 0;
+    let inString = false;
+    let escapeNext = false;
+
+    for (let i = start; i < content.length; i += 1) {
+      const char = content[i];
+
+      if (escapeNext) {
+        escapeNext = false;
+        continue;
+      }
+
+      if (char === '\\') {
+        escapeNext = true;
+        continue;
+      }
+
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) {
+        continue;
+      }
+
+      if (char === '{') {
+        depth += 1;
+      } else if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return content.slice(start, i + 1);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  buildGraphPayload(graphDecision, rows) {
+    const typeKey = graphDecision.type?.toLowerCase();
+    const template = GRAPH_TEMPLATES[typeKey];
+    const mapping = this.inferGraphMapping(rows, graphDecision);
+
+    return {
+      required: true,
+      type: template?.type || typeKey || 'unknown',
+      reason: graphDecision.reason || template?.description || 'Graph requested by user',
+      template: template || null,
+      mapping,
+      data: rows
+    };
+  }
+
+  inferGraphMapping(rows, graphDecision = {}) {
+    const firstRow = rows?.find((row) => row && Object.keys(row).length);
+    if (!firstRow) {
+      return {
+        xKey: graphDecision.xKey || null,
+        yKey: graphDecision.yKey || null,
+        yKeys: graphDecision.yKeys || null,
+        seriesKey: graphDecision.seriesKey || null
+      };
+    }
+
+    const columnNames = Object.keys(firstRow);
+    const numericColumns = [];
+    const categoricalColumns = [];
+
+    for (const col of columnNames) {
+      const sampleValue = rows.find((row) => row && row[col] !== null && row[col] !== undefined)?.[col];
+      const isNumericString = typeof sampleValue === 'string' && sampleValue.trim() !== '' && !isNaN(Number(sampleValue));
+      if (typeof sampleValue === 'number' || isNumericString) {
+        numericColumns.push(col);
+      } else if (typeof sampleValue === 'string' || sampleValue instanceof Date) {
+        categoricalColumns.push(col);
+      }
+    }
+
+    // Better defaults: prefer obvious time and amount columns
+    const timePreferred = columnNames.find((c) => /date|time|timestamp|created|updated|day|month|year/i.test(c)) || categoricalColumns[0];
+    const valuePreferred =
+      numericColumns.find((c) => /amount|price|total|value|quantity|qty|balance/i.test(c)) ||
+      numericColumns[0];
+
+    const fallbackX = graphDecision.xKey || timePreferred || columnNames[0] || null;
+    const fallbackY = graphDecision.yKey || valuePreferred || (numericColumns.length ? numericColumns : null);
+
+    return {
+      xKey: graphDecision.xKey || fallbackX,
+      yKey: graphDecision.yKey || (Array.isArray(fallbackY) ? fallbackY[0] : fallbackY),
+      yKeys: graphDecision.yKeys || (Array.isArray(fallbackY) ? fallbackY : (numericColumns.length > 1 ? numericColumns : null)),
+      seriesKey: graphDecision.seriesKey || (categoricalColumns.length > 1 ? categoricalColumns[1] : null)
+    };
+  }
+
+  parseJSONContent(content) {
+    if (!content) return null;
+
+    let cleaned = content.trim();
+
+    const blockMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (blockMatch) {
+      cleaned = blockMatch[1].trim();
+    } else {
+      cleaned = cleaned.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    }
+
+    const direct = this.tryParseJSON(cleaned);
+    if (direct) {
+      return direct;
+    }
+
+    const candidate = this.extractJSONObject(cleaned);
+    if (candidate) {
+      const parsedCandidate = this.tryParseJSON(candidate);
+      if (parsedCandidate) {
+        return parsedCandidate;
+      }
+    }
+
+    console.error('JSON parse fallback failed: unable to extract JSON from', content);
+    return null;
   }
 
   // Clean SQL query by removing markdown code blocks and extra formatting
