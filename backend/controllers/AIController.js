@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import { getDbClient } from "../config/database.js";
+import GraphController from "./GraphController.js";
 
 // Only support fixed graph types: bar and line
 const GRAPH_TEMPLATES = Object.freeze({
@@ -20,6 +21,7 @@ class AIController {
     this.groq = new Groq({
       apiKey: process.env.GROQ_API_KEY,
     });
+    this.graphController = new GraphController();
   }
 
   get db() {
@@ -87,14 +89,29 @@ class AIController {
       );
 
       let graphPayload = { required: false };
+      let graphImage = null;
+      
       if (needsGraph && queryResults.rows.length) {
         try {
           const graphDecision = await this.selectGraphConfiguration(prompt, queryResults.rows);
           if (graphDecision) {
-            graphPayload = this.buildGraphPayload(graphDecision, queryResults.rows);
+            const chartConfig = this.buildChartJSConfig(graphDecision, queryResults.rows);
+            
+            // Call the graph route to generate PNG image
+            const graphImageBuffer = await this.generateGraphImage(chartConfig);
+            if (graphImageBuffer) {
+              // Convert buffer to base64 for frontend
+              graphImage = `data:image/png;base64,${graphImageBuffer.toString('base64')}`;
+              graphPayload = {
+                required: true,
+                type: graphDecision.type,
+                reason: graphDecision.reason,
+                hasImage: true
+              };
+            }
           }
         } catch (graphError) {
-          console.error('Graph preparation error:', graphError);
+          console.error('Graph generation error:', graphError);
         }
       }
 
@@ -103,7 +120,8 @@ class AIController {
         raw_results: queryResults.rows,
         interpretation: interpretation,
         table_used: relevantTable,
-        graph: graphPayload
+        graph: graphPayload,
+        graphImage: graphImage
       });
 
     } catch (error) {
@@ -142,6 +160,7 @@ class AIController {
 
     const xKey = timeLikeCols[0] || categoricalCols[0] || cols[0] || null;
     const yKey = numericCols[0] || null;
+    const yKeys = numericCols.length > 1 ? numericCols : null;
 
     const type = wantsTrend || timeLikeCols.length ? "line" : "bar";
 
@@ -153,7 +172,7 @@ class AIController {
           : "Bar chart selected for categorical comparisons.",
       xKey,
       yKey,
-      yKeys: null,
+      yKeys,
       seriesKey: null,
     };
   }
@@ -267,6 +286,120 @@ class AIController {
       yKey: graphDecision.yKey || (Array.isArray(fallbackY) ? fallbackY[0] : fallbackY),
       yKeys: graphDecision.yKeys || (Array.isArray(fallbackY) ? fallbackY : (numericColumns.length > 1 ? numericColumns : null)),
       seriesKey: graphDecision.seriesKey || (categoricalColumns.length > 1 ? categoricalColumns[1] : null)
+    };
+  }
+
+  // Generate graph image by calling the GraphController directly
+  async generateGraphImage(chartConfig) {
+    try {
+      // Create a mock request/response object for the GraphController
+      const mockReq = { body: chartConfig };
+      let responseBuffer = null;
+      let responseContentType = null;
+      
+      const mockRes = {
+        status: (code) => ({
+          json: (data) => {
+            console.error('Graph generation error:', data);
+            return null;
+          }
+        }),
+        set: (header, value) => {
+          if (header === 'Content-Type') {
+            responseContentType = value;
+          }
+        },
+        send: (buffer) => {
+          responseBuffer = buffer;
+        }
+      };
+
+      await this.graphController.generateGraph(mockReq, mockRes);
+      
+      if (responseBuffer && responseContentType === 'image/png') {
+        return responseBuffer;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error generating graph image:', error);
+      return null;
+    }
+  }
+
+  // Build Chart.js configuration for the graph route
+  buildChartJSConfig(graphDecision, rows) {
+    const { type, xKey, yKey, yKeys } = graphDecision;
+    
+    // Extract labels (x-axis values)
+    const labels = rows.map(row => {
+      const value = row[xKey];
+      // Format dates nicely if they are dates
+      if (value instanceof Date || (typeof value === 'string' && !isNaN(Date.parse(value)))) {
+        try {
+          return new Date(value).toLocaleDateString();
+        } catch (e) {
+          return String(value);
+        }
+      }
+      return String(value);
+    });
+
+    // Determine which columns to use for data
+    const dataKeys = Array.isArray(yKeys) && yKeys.length ? yKeys : [yKey];
+    
+    // Build datasets
+    const datasets = dataKeys.map((key, index) => {
+      const colors = ['#4BC0C0', '#36A2EB', '#9966FF', '#FF6384', '#FF9F40'];
+      const backgroundColor = type === 'bar' ? colors[index % colors.length] : 'rgba(75,192,192,0.6)';
+      const borderColor = type === 'line' ? 'rgb(75,192,192)' : undefined;
+      
+      return {
+        label: key,
+        data: rows.map(row => Number(row[key]) || 0),
+        backgroundColor,
+        borderColor,
+        borderWidth: type === 'line' ? 2 : 1,
+        tension: type === 'line' ? 0.2 : undefined,
+        fill: type === 'line' ? false : undefined
+      };
+    });
+
+    return {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: datasets
+      },
+      options: {
+        responsive: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: graphDecision.reason || 'Data Visualization'
+          }
+        },
+        scales: {
+          x: {
+            display: true,
+            title: {
+              display: true,
+              text: xKey
+            }
+          },
+          y: {
+            display: true,
+            title: {
+              display: true,
+              text: dataKeys.join(', ')
+            }
+          }
+        }
+      }
     };
   }
 

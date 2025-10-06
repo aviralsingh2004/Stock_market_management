@@ -3,92 +3,23 @@ import Navbar from "../Components/Navbar/Navbar";
 import { apiUrl } from "../config/api";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-import { Bar, Line } from "react-chartjs-2";
 
-// Register required Chart.js elements once
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Component to display PNG images from backend
+const GraphImageRenderer = ({ graphImage, graphInfo }) => {
+  if (!graphImage || !graphInfo?.required) return null;
 
-// Build dataset for Chart.js from the backend payload
-const GraphRenderer = ({ payload }) => {
-  if (!payload || !payload.mapping || !payload.data) return null;
-
-  const { type, mapping, data, reason } = payload;
-  const { xKey, yKey, yKeys } = mapping;
-
-  if (!xKey || (!yKey && !yKeys)) {
-    return (
-      <p className="text-yellow-400">Unable to build chart from the data.</p>
-    );
-  }
-
-  const labels = data.map((row) => {
-    const v = row[xKey];
-    try {
-      // Render ISO dates nicely if possible
-      const d = new Date(v);
-      if (!isNaN(d.getTime())) return d.toLocaleDateString();
-    } catch (_) {}
-    return String(v);
-  });
-
-  const numericKeys = Array.isArray(yKeys) && yKeys.length ? yKeys : [yKey];
-
-  const datasets = numericKeys.map((key, idx) => ({
-    label: key,
-    data: data.map((row) => Number(row[key]) || 0),
-    backgroundColor:
-      type === "bar"
-        ? [
-            "#4BC0C0",
-            "#36A2EB",
-            "#9966FF",
-            "#FF6384",
-            "#FF9F40",
-          ][idx % 5]
-        : "rgba(75,192,192,0.6)",
-    borderColor: type === "line" ? "rgb(75,192,192)" : undefined,
-    borderWidth: type === "line" ? 2 : undefined,
-    tension: type === "line" ? 0.2 : undefined,
-    fill: type === "line",
-  }));
-
-  const chartData = { labels, datasets };
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: "top" },
-      title: { display: !!reason, text: reason || "" },
-    },
-    scales: {
-      x: { ticks: { color: "#fff" } },
-      y: { ticks: { color: "#fff" } },
-    },
-  };
-
-  return type === "bar" ? (
-    <Bar data={chartData} options={chartOptions} />
-  ) : (
-    <Line data={chartData} options={chartOptions} />
+  return (
+    <div className="bg-gray-900 p-4 rounded-lg mt-2">
+      <p className="text-gray-300 text-sm mb-2">
+        {graphInfo.reason || "Generated visualization"}
+      </p>
+      <img 
+        src={graphImage} 
+        alt="Data Visualization" 
+        className="max-w-full h-auto rounded border border-gray-600"
+        style={{ maxHeight: '500px' }}
+      />
+    </div>
   );
 };
 const ChatInterface = () => {
@@ -218,10 +149,11 @@ const ChatInterface = () => {
               {/* Optional graph rendering */}
               {message.role === "assistant" &&
                 typeof message.content === "object" &&
-                message.content?.graph?.required && (
-                  <div className="bg-gray-900 p-4 rounded-lg mt-2">
-                    <GraphRenderer payload={message.content.graph} />
-                  </div>
+                message.content?.graphImage && (
+                  <GraphImageRenderer 
+                    graphImage={message.content.graphImage} 
+                    graphInfo={message.content.graph}
+                  />
                 )}
             </div>
           </div>
