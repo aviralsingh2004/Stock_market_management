@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiUrl } from "../../config/api";
 import { useNavigate } from "react-router-dom";
 
 export const Signup = () => {
@@ -23,7 +24,7 @@ export const Signup = () => {
     setError("");
 
     try {
-      const response = await fetch("http://localhost:4000/api/auth/signup", {
+      const response = await fetch(apiUrl("/api/auth/signup"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

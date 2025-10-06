@@ -1,4 +1,8 @@
-﻿import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+
+// Resolve API base for LAN access without hardcoding localhost
+const API_BASE = (process.env.REACT_APP_API_BASE_URL || "").replace(/\/$/, "") ||
+  `${window.location.protocol}//${window.location.hostname}:${process.env.REACT_APP_API_PORT || 4000}`;
 
 const AuthContext = createContext(undefined);
 
@@ -9,7 +13,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshAuth = useCallback(async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/auth/check", {
+      const response = await fetch(`${API_BASE}/api/auth/check`, {
         credentials: "include",
       });
 
@@ -42,7 +46,7 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(async ({ email, password }) => {
     try {
       setAuthError(null);
-      const response = await fetch("http://localhost:4000/api/auth/login", {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -72,7 +76,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      await fetch("http://localhost:4000/api/auth/logout", {
+      await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
         credentials: "include",
       });
@@ -108,3 +112,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

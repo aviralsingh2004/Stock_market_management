@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../Components/Navbar/Navbar";
+import { apiUrl } from "../config/api";
 import { useAuth } from "../context/AuthContext";
 
 export const Funds = () => {
@@ -35,7 +36,7 @@ export const Funds = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/users/balance", {
+      const response = await fetchWithAuth(apiUrl("/api/users/balance"), {
         method: "GET",
       });
 
@@ -61,7 +62,7 @@ export const Funds = () => {
 
     try {
       const response = await fetchWithAuth(
-        "http://localhost:4000/api/users/total_balance",
+        apiUrl("/api/users/total_balance"),
         {
           method: "POST",
           headers: {
@@ -97,7 +98,7 @@ export const Funds = () => {
 
     try {
       const response = await fetchWithAuth(
-        "http://localhost:4000/api/users/total_balance",
+        apiUrl("/api/users/total_balance"),
         {
           method: "POST",
           headers: {

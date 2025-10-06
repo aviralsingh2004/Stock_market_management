@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { apiUrl } from "../config/api";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
@@ -66,7 +67,7 @@ const Portfolio = () => {
 
   const fetchBalance = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/users/balance", {
+      const response = await fetchWithAuth(apiUrl("/api/users/balance"), {
         method: "GET",
       });
       const data = await response.json();
@@ -80,7 +81,7 @@ const Portfolio = () => {
   };
   const pdfgenerator = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/transactions/report", {
+      const response = await fetchWithAuth(apiUrl("/api/transactions/report"), {
         method: "GET",
       });
 
@@ -106,7 +107,7 @@ const Portfolio = () => {
   };
   const fetchStockInfo = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/stocks/portfolio");
+      const response = await fetchWithAuth(apiUrl("/api/stocks/portfolio"));
       const data = await response.json();
 
       const stocks = data.stocks || data;
@@ -123,7 +124,7 @@ const Portfolio = () => {
 
   const fetchTransactionInfo = async () => {
     try {
-      let url = "http://localhost:4000/api/transactions";
+      let url = apiUrl("/api/transactions");
 
       if (startDate && endDate) {
         url += `?startDate=${startDate}&endDate=${endDate}`;
@@ -150,7 +151,7 @@ const Portfolio = () => {
 
   const fetchTotalprofit = async () => {
     try {
-      const result = await fetchWithAuth(`http://localhost:4000/api/stocks/profit-loss`);
+      const result = await fetchWithAuth(apiUrl(`/api/stocks/profit-loss`));
       if (!result.ok) throw new Error(`Failed to fetch profit/loss history`);
 
       const data = await result.json();
@@ -166,7 +167,7 @@ const Portfolio = () => {
 
   const fetchComprof = async () => {
     try {
-      const result = await fetchWithAuth(`http://localhost:4000/api/transactions/profit-loss`);
+      const result = await fetchWithAuth(apiUrl(`/api/transactions/profit-loss`));
       if (!result.ok) {
         const errorText = await result.text();
         console.error("API Error:", errorText);

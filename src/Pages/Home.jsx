@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./home.css";
 import Navbar from "../Components/Navbar/Navbar";
+import { apiUrl } from "../config/api";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -44,7 +45,7 @@ export const Home = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/market/companies", {
+      const response = await fetch(apiUrl("/api/market/companies"), {
         credentials: "include"
       });
 
@@ -68,7 +69,7 @@ export const Home = () => {
   const fetchHistoricalData = async (symbol) => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/market/historical/${symbol}`,
+        apiUrl(`/api/market/historical/${symbol}`),
         {
           credentials: "include"
         }
@@ -230,7 +231,6 @@ export const Home = () => {
 };
 
 export default Home;
-
 
 
 

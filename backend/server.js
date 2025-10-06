@@ -19,7 +19,7 @@ import stockRoutes from "./routes/stocks.js";
 import transactionRoutes from "./routes/transactions.js";
 import aiRoutes from "./routes/ai.js";
 import marketRoutes from "./routes/market.js";
-
+import graphRoutes from "./routes/graph.js";
 // Import services
 import { checkDateChange } from "./services/dateChecker.js";
 
@@ -38,6 +38,8 @@ app.use(requestLogger);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors(corsOptions));
+// Explicitly handle preflight for all routes
+app.options("*", cors(corsOptions));
 
 // Session middleware
 app.use(session({
@@ -45,7 +47,8 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: { 
-    secure: false, // Set to true in production with HTTPS
+    // For same-LAN access over HTTP keep secure false; set true when behind HTTPS
+    secure: false,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
@@ -58,6 +61,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/stocks", stockRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/graph",graphRoutes);
 app.use("/api/market", marketRoutes);
 
 // Health check endpoint
@@ -86,10 +90,10 @@ const startServer = async () => {
     await checkDateChange();
 
     // Start the server
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       console.log(`Server is running on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`API base URL: http://localhost:${port}/api`);
+      console.log(`API base URL: http://0.0.0.0:${port}/api`);
     });
 
   } catch (error) {

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { apiUrl } from "../config/api";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -118,7 +119,7 @@ const ChatInterface = () => {
     let response;
     try {
       console.log("Sending prompt:", prompt);
-      response = await fetch("http://localhost:4000/api/ai/process", {
+      response = await fetch(apiUrl("/api/ai/process"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

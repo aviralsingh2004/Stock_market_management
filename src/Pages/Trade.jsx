@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import Navbar from "../Components/Navbar/Navbar";
+import { apiUrl } from "../config/api";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { typographyClasses } from "@mui/material";
@@ -51,7 +52,7 @@ const Trade = () => {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/stocks/companies");
+      const response = await fetchWithAuth(apiUrl("/api/stocks/companies"));
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -69,7 +70,7 @@ const Trade = () => {
 
   const fetchStockInfo = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/stocks/portfolio");
+      const response = await fetchWithAuth(apiUrl("/api/stocks/portfolio"));
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
@@ -87,7 +88,7 @@ const Trade = () => {
 
   const fetchNews = async () => {
     try {
-      const response = await fetchWithAuth("http://localhost:4000/api/market/news");
+      const response = await fetchWithAuth(apiUrl("/api/market/news"));
       if (!response.ok) throw new Error("Failed to fetch news");
       
       const data = await response.json();
@@ -111,7 +112,7 @@ const Trade = () => {
     try {
       console.log("Trade request data:", { company_id, quantity, transaction_type });
       
-      const response = await fetchWithAuth(`http://localhost:4000/api/stocks/trade`, {
+      const response = await fetchWithAuth(apiUrl(`/api/stocks/trade`), {
         method: "POST",
         headers: {
           "Content-type": "application/json",
